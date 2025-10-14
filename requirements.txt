@@ -1,0 +1,15 @@
+# Star Citizen Profile Viewer - Dependencies
+
+# GUI Framework
+PyQt6>=6.6.0
+
+# Document Generation
+python-docx>=1.1.0          # Word document generation
+reportlab>=4.0.0            # PDF generation
+fpdf2>=2.7.0                # Alternative PDF library
+
+# Image Processing
+Pillow>=10.1.0              # Image manipulation and graphics
+
+# Optional but useful
+pyinstaller>=6.3.0          # For building standalone executable

@@ -1,0 +1,47 @@
+"""
+Data models for Star Citizen profiles
+"""
+
+from dataclasses import dataclass
+from typing import List, Dict, Optional
+
+
+@dataclass
+class Device:
+    """Represents a game controller device"""
+    device_type: str  # keyboard, mouse, joystick
+    instance: int
+    product_id: Optional[str] = None
+    product_name: Optional[str] = None
+
+
+@dataclass
+class ActionBinding:
+    """Represents a single action binding"""
+    action_name: str
+    input_code: str
+    activation_mode: Optional[str] = None
+    custom_label: Optional[str] = None
+
+
+@dataclass
+class ActionMap:
+    """Represents a group of related actions (e.g., spaceship_movement)"""
+    name: str
+    actions: List[ActionBinding]
+
+
+@dataclass
+class ControlProfile:
+    """Represents a complete Star Citizen control profile"""
+    profile_name: str
+    devices: List[Device]
+    action_maps: List[ActionMap]
+    categories: List[str]
+
+    def get_all_bindings(self) -> List[ActionBinding]:
+        """Get all action bindings across all action maps"""
+        bindings = []
+        for action_map in self.action_maps:
+            bindings.extend(action_map.actions)
+        return bindings

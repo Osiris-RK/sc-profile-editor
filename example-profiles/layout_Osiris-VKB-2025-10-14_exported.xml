@@ -1,0 +1,55 @@
+<ActionMaps version="1" optionsVersion="2" rebindVersion="2" profileName="Osiris-VKB-2025-10-14">
+ <CustomisationUIHeader label="Osiris-VKB-2025-10-14" description="" image="">
+  <devices>
+   <keyboard instance="1"/>
+   <mouse instance="1"/>
+  </devices>
+  <categories>
+   <category label="@ui_CCSpaceFlight"/>
+   <category label="@ui_CCSeatGeneral"/>
+   <category label="@ui_CGLightControllerDesc"/>
+   <category label="@ui_CGOpticalTracking"/>
+   <category label="@ui_CGInteraction"/>
+  </categories>
+ </CustomisationUIHeader>
+ <deviceoptions name="Mouse">
+  <option input="@pause_OptionsMouseSmoothing" saturation="0"/>
+  <option input="@pause_OptionsMouseSmoothing" saturation="0"/>
+ </deviceoptions>
+ <options type="keyboard" instance="1" Product="Keyboard  {6F1D2B61-D5A0-11CF-BFC7-444553540000}"/>
+ <modifiers />
+ <actionmap name="spaceship_movement">
+  <action name="v_accel_range_down">
+   <rebind input="kb1_down"/>
+  </action>
+  <action name="v_accel_range_up">
+   <rebind input="kb1_up"/>
+  </action>
+  <action name="v_auto_precision_mode_toggle">
+   <rebind input="kb1_slash"/>
+  </action>
+ </actionmap>
+ <actionmap name="spaceship_quantum">
+  <action name="v_toggle_qdrive_engagement">
+   <rebind input="kb1_ "/>
+  </action>
+ </actionmap>
+ <actionmap name="lights_controller">
+  <action name="v_lights">
+   <rebind input="kb1_ "/>
+  </action>
+ </actionmap>
+ <actionmap name="player_input_optical_tracking">
+  <action name="foip_pushtotalk">
+   <rebind input="kb1_ "/>
+  </action>
+  <action name="foip_pushtotalk_proximity">
+   <rebind input="kb1_mouse4"/>
+  </action>
+ </actionmap>
+ <actionmap name="player_choice">
+  <action name="pc_pit_item_drop">
+   <rebind input="kb1_slash"/>
+  </action>
+ </actionmap>
+</ActionMaps>
