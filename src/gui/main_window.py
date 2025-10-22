@@ -5,11 +5,15 @@ Main application window
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QPushButton, QLabel, QFileDialog, QMessageBox,
                               QTextEdit, QTableWidget, QTableWidgetItem, QSplitter,
-                              QLineEdit, QComboBox, QGroupBox, QCheckBox)
-from PyQt6.QtCore import Qt, QSortFilterProxyModel
+                              QLineEdit, QComboBox, QGroupBox, QCheckBox, QTabWidget,
+                              QStyledItemDelegate)
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QTimer
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
 import sys
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -17,6 +21,36 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from parser.xml_parser import ProfileParser
 from parser.label_generator import LabelGenerator
 from models.profile_model import ControlProfile
+from gui.device_graphics import DeviceGraphicsWidget
+from utils.settings import AppSettings
+
+
+class SelectAllDelegate(QStyledItemDelegate):
+    """Custom delegate that selects all text when editing starts"""
+
+    def __init__(self, parent, main_window):
+        super().__init__(parent)
+        self.main_window = main_window
+
+    def setEditorData(self, editor, index):
+        """Set the editor's data with the original text and select all"""
+        if isinstance(editor, QLineEdit):
+            # Use the original text stored before editing started
+            if self.main_window._editing_original_text is not None:
+                editor.setText(self.main_window._editing_original_text)
+            else:
+                # Fallback to model data
+                super().setEditorData(editor, index)
+
+            # Select all text with a small delay to ensure the editor is ready
+            def select_text():
+                if editor and not editor.isHidden():
+                    editor.selectAll()
+                    editor.setFocus()
+
+            QTimer.singleShot(0, select_text)
+        else:
+            super().setEditorData(editor, index)
 
 
 class MainWindow(QMainWindow):
@@ -27,14 +61,24 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Star Citizen Profile Viewer")
         self.setGeometry(100, 100, 1200, 800)
 
+        # Initialize settings manager
+        self.settings = AppSettings()
+
         # Store current profile
         self.current_profile = None
+        self.current_profile_path = None
 
         # Store all bindings for filtering
         self.all_bindings = []
 
         # Create UI
         self.setup_ui()
+
+        # Restore window geometry if saved
+        self.restore_window_state()
+
+        # Auto-load last profile after UI is shown (use QTimer to defer until after show())
+        QTimer.singleShot(100, self.auto_load_last_profile)
 
     def setup_ui(self):
         """Set up the user interface"""
@@ -115,12 +159,26 @@ class MainWindow(QMainWindow):
         self.hide_unmapped_checkbox.stateChanged.connect(self.apply_filters)
         filter_layout.addWidget(self.hide_unmapped_checkbox)
 
+        # Show detailed checkbox
+        self.show_detailed_checkbox = QCheckBox("Show Detailed")
+        self.show_detailed_checkbox.stateChanged.connect(self.toggle_detailed_view)
+        filter_layout.addWidget(self.show_detailed_checkbox)
+
         # Clear filters button
         clear_btn = QPushButton("Clear Filters")
         clear_btn.clicked.connect(self.clear_filters)
         filter_layout.addWidget(clear_btn)
 
         main_layout.addWidget(filter_group)
+
+        # Create tab widget for different views
+        self.tab_widget = QTabWidget()
+        main_layout.addWidget(self.tab_widget)
+
+        # Tab 1: Controls Table View
+        table_tab = QWidget()
+        table_layout = QVBoxLayout()
+        table_tab.setLayout(table_layout)
 
         # Splitter for info and table
         splitter = QSplitter(Qt.Orientation.Vertical)
@@ -134,43 +192,115 @@ class MainWindow(QMainWindow):
 
         # Controls table
         self.controls_table = QTableWidget()
-        self.controls_table.setColumnCount(5)
+        self.controls_table.setColumnCount(6)  # Max columns for detailed view
         self.controls_table.setHorizontalHeaderLabels([
-            "Action Map", "Action", "Input Code", "Input Label", "Device"
+            "Action Map", "Action", "Action (Override)", "Input Code", "Input Label", "Device"
         ])
         self.controls_table.horizontalHeader().setStretchLastSection(False)
         self.controls_table.setAlternatingRowColors(True)
         self.controls_table.setSortingEnabled(True)
         self.controls_table.setEditTriggers(QTableWidget.EditTrigger.DoubleClicked)
         self.controls_table.itemChanged.connect(self.on_cell_edited)
+        self.controls_table.itemDoubleClicked.connect(self.on_item_double_clicked)
+
+        # Set custom delegate for column 2 to handle text selection
+        delegate = SelectAllDelegate(self.controls_table, self)
+        self.controls_table.setItemDelegateForColumn(2, delegate)
+
         splitter.addWidget(self.controls_table)
+
+        # Track editing state
+        self._editing_item = None
+        self._editing_original_text = None
+
+        # Track editable columns (column 2 is Action Override, editable only in detailed view)
+        self.editable_columns = {2}  # Column 2: Action (Override)
 
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 3)
 
-        main_layout.addWidget(splitter)
+        table_layout.addWidget(splitter)
+        self.tab_widget.addTab(table_tab, "Controls Table")
+
+        # Tab 2: Device Graphics View
+        templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "visual-templates")
+        self.graphics_widget = DeviceGraphicsWidget(templates_dir)
+        self.tab_widget.addTab(self.graphics_widget, "Device Graphics")
 
         # Status bar
         self.statusBar().showMessage("Ready")
 
+    def restore_window_state(self):
+        """Restore saved window geometry and state"""
+        geometry = self.settings.get_window_geometry()
+        if geometry:
+            self.restoreGeometry(geometry)
+            logger.debug("Restored window geometry")
+
+        state = self.settings.get_window_state()
+        if state:
+            self.restoreState(state)
+            logger.debug("Restored window state")
+
+    def closeEvent(self, event):
+        """Save window state before closing"""
+        self.settings.set_window_geometry(self.saveGeometry())
+        self.settings.set_window_state(self.saveState())
+        logger.debug("Saved window state")
+        event.accept()
+
+    def auto_load_last_profile(self):
+        """Automatically load the last opened profile if it exists"""
+        last_profile_path = self.settings.get_last_profile_path()
+
+        if not last_profile_path:
+            logger.info("No last profile found")
+            return
+
+        if not os.path.exists(last_profile_path):
+            logger.warning(f"Last profile no longer exists: {last_profile_path}")
+            self.settings.clear_last_profile_path()
+            return
+
+        logger.info(f"Auto-loading last profile: {last_profile_path}")
+        self.load_profile_from_path(last_profile_path)
+
     def import_profile(self):
         """Handle profile import button click"""
+        # Get last directory if available
+        last_path = self.settings.get_last_profile_path()
+        start_dir = os.path.dirname(last_path) if last_path and os.path.exists(last_path) else ""
+
         # Open file dialog
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select Star Citizen Profile XML",
-            "",
+            start_dir,
             "XML Files (*.xml);;All Files (*)"
         )
 
         if not file_path:
             return  # User cancelled
 
+        self.load_profile_from_path(file_path)
+
+    def load_profile_from_path(self, file_path: str):
+        """
+        Load a profile from the given file path
+
+        Args:
+            file_path: Path to the profile XML file
+        """
         try:
             # Parse the profile
             self.statusBar().showMessage(f"Loading profile: {file_path}")
+            logger.info(f"Loading profile: {file_path}")
             parser = ProfileParser(file_path)
             self.current_profile = parser.parse()
+            self.current_profile_path = file_path
+
+            # Save as last opened profile
+            self.settings.set_last_profile_path(file_path)
 
             # Update UI with profile data
             self.display_profile()
@@ -181,16 +311,20 @@ class MainWindow(QMainWindow):
             self.export_word_btn.setEnabled(True)
 
             self.statusBar().showMessage(f"Successfully loaded: {self.current_profile.profile_name}")
+            logger.info(f"Successfully loaded profile: {self.current_profile.profile_name}")
 
         except FileNotFoundError:
             QMessageBox.critical(self, "Error", f"File not found: {file_path}")
             self.statusBar().showMessage("Error: File not found")
+            logger.error(f"File not found: {file_path}")
         except ValueError as e:
             QMessageBox.critical(self, "Parse Error", f"Failed to parse XML file:\n{str(e)}")
             self.statusBar().showMessage("Error: Failed to parse XML")
+            logger.error(f"Parse error: {e}", exc_info=True)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An unexpected error occurred:\n{str(e)}")
             self.statusBar().showMessage("Error loading profile")
+            logger.error(f"Error loading profile: {e}", exc_info=True)
 
     def display_profile(self):
         """Display the loaded profile data"""
@@ -225,6 +359,12 @@ class MainWindow(QMainWindow):
         # Populate controls table
         self.populate_controls_table()
 
+        # Apply filters to show the rows (important when loading a new profile)
+        self.apply_filters()
+
+        # Load profile into graphics widget
+        self.graphics_widget.load_profile(profile)
+
     def populate_controls_table(self):
         """Populate the controls table with bindings"""
         if not self.current_profile:
@@ -248,32 +388,62 @@ class MainWindow(QMainWindow):
         # Set row count
         self.controls_table.setRowCount(len(self.all_bindings))
 
+        # Determine if we're in detailed view
+        is_detailed = self.show_detailed_checkbox.isChecked()
+
+        # Configure column visibility based on view mode
+        if is_detailed:
+            # Detailed view: Show all 6 columns
+            # 0: Action Map, 1: Action (original), 2: Action (Override), 3: Input Code, 4: Input Label, 5: Device
+            self.controls_table.setColumnHidden(1, False)
+            self.controls_table.setColumnHidden(2, False)
+            self.controls_table.setColumnHidden(3, False)
+            self.controls_table.setColumnHidden(4, False)
+        else:
+            # Default view: Show only 3 columns (0: Action Map, 2: Action, 5: Device)
+            # Hide columns 1, 3, 4
+            self.controls_table.setColumnHidden(1, True)
+            self.controls_table.setColumnHidden(3, True)
+            self.controls_table.setColumnHidden(4, True)
+            self.controls_table.setColumnHidden(2, False)  # Show override column (as "Action")
+
         # Populate table
         for row, (action_map_name, binding) in enumerate(self.all_bindings):
-            # Action Map
+            # Column 0: Action Map
             action_map_label = LabelGenerator.generate_actionmap_label(action_map_name)
-            self.controls_table.setItem(row, 0, QTableWidgetItem(action_map_label))
+            action_map_item = QTableWidgetItem(action_map_label)
+            action_map_item.setFlags(action_map_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.controls_table.setItem(row, 0, action_map_item)
 
-            # Action
-            action_label = LabelGenerator.generate_action_label(binding.action_name)
-            self.controls_table.setItem(row, 1, QTableWidgetItem(action_label))
+            # Column 1: Action (original auto-generated) - only visible in detailed view
+            action_label_original = LabelGenerator.generate_action_label(binding.action_name)
+            action_original_item = QTableWidgetItem(action_label_original)
+            action_original_item.setFlags(action_original_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.controls_table.setItem(row, 1, action_original_item)
 
-            # Input Code (raw) - make read-only
+            # Column 2: Action (with override) - editable, visible in both views
+            action_label_override = LabelGenerator.get_action_label(binding.action_name, binding)
+            action_override_item = QTableWidgetItem(action_label_override)
+            # Store binding reference in the item for later retrieval during editing
+            action_override_item.setData(Qt.ItemDataRole.UserRole, (action_map_name, binding))
+            self.controls_table.setItem(row, 2, action_override_item)
+
+            # Column 3: Input Code (raw) - only visible in detailed view
             input_code_item = QTableWidgetItem(binding.input_code)
             input_code_item.setFlags(input_code_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.controls_table.setItem(row, 2, input_code_item)
+            self.controls_table.setItem(row, 3, input_code_item)
 
-            # Input Label (human-readable) - make read-only
+            # Column 4: Input Label (human-readable) - only visible in detailed view
             input_label = LabelGenerator.generate_input_label(binding.input_code)
             input_label_item = QTableWidgetItem(input_label)
             input_label_item.setFlags(input_label_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.controls_table.setItem(row, 3, input_label_item)
+            self.controls_table.setItem(row, 4, input_label_item)
 
-            # Device (parsed from input code) - make read-only
+            # Column 5: Device (parsed from input code)
             device = self.parse_device_from_input(binding.input_code)
             device_item = QTableWidgetItem(device)
             device_item.setFlags(device_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.controls_table.setItem(row, 4, device_item)
+            self.controls_table.setItem(row, 5, device_item)
 
         # Re-enable signals
         self.controls_table.blockSignals(False)
@@ -284,10 +454,18 @@ class MainWindow(QMainWindow):
         # Resize columns to content
         self.controls_table.resizeColumnsToContents()
 
-        # Make Action Map and Action columns wider
-        self.controls_table.setColumnWidth(0, 200)
-        self.controls_table.setColumnWidth(1, 250)
-        self.controls_table.setColumnWidth(3, 200)
+        # Set column widths based on view mode
+        if is_detailed:
+            self.controls_table.setColumnWidth(0, 200)  # Action Map
+            self.controls_table.setColumnWidth(1, 200)  # Action (Original)
+            self.controls_table.setColumnWidth(2, 200)  # Action (Override)
+            self.controls_table.setColumnWidth(3, 150)  # Input Code
+            self.controls_table.setColumnWidth(4, 200)  # Input Label
+            self.controls_table.setColumnWidth(5, 150)  # Device
+        else:
+            self.controls_table.setColumnWidth(0, 250)  # Action Map
+            self.controls_table.setColumnWidth(2, 350)  # Action (Override)
+            self.controls_table.setColumnWidth(5, 200)  # Device
 
     def parse_device_from_input(self, input_code: str) -> str:
         """Parse device type from input code"""
@@ -363,7 +541,7 @@ class MainWindow(QMainWindow):
 
             # Device filter
             if show_row and device_filter != "All Devices":
-                device_item = self.controls_table.item(row, 4)
+                device_item = self.controls_table.item(row, 5)  # Device is now column 5
                 if device_item and device_item.text() != device_filter:
                     show_row = False
 
@@ -376,8 +554,8 @@ class MainWindow(QMainWindow):
             # Unmapped keys filter - check if input_code == input_label (after stripping)
             # or if the label indicates an empty/unmapped binding
             if show_row and hide_unmapped:
-                input_code_item = self.controls_table.item(row, 2)
-                input_label_item = self.controls_table.item(row, 3)
+                input_code_item = self.controls_table.item(row, 3)  # Input Code is now column 3
+                input_label_item = self.controls_table.item(row, 4)  # Input Label is now column 4
                 if input_code_item and input_label_item:
                     input_code = input_code_item.text().strip()
                     input_label = input_label_item.text().strip()
@@ -398,6 +576,21 @@ class MainWindow(QMainWindow):
         total_rows = self.controls_table.rowCount()
         self.statusBar().showMessage(f"Showing {visible_rows} of {total_rows} bindings")
 
+    def toggle_detailed_view(self):
+        """Toggle between default and detailed view"""
+        if not self.current_profile:
+            return
+
+        # Repopulate the table with the new view mode
+        self.populate_controls_table()
+
+        # Reapply filters
+        self.apply_filters()
+
+        # Update status message
+        view_mode = "detailed" if self.show_detailed_checkbox.isChecked() else "default"
+        self.statusBar().showMessage(f"Switched to {view_mode} view")
+
     def clear_filters(self):
         """Clear all filters"""
         self.search_box.clear()
@@ -406,11 +599,88 @@ class MainWindow(QMainWindow):
         self.hide_unmapped_checkbox.setChecked(False)
         self.statusBar().showMessage(f"Filters cleared - showing all {self.controls_table.rowCount()} bindings")
 
+    def on_item_double_clicked(self, item):
+        """Handle double-click - hide the item text while editing"""
+        if item.column() == 2:  # Action (Override) column
+            # Store the original text and item
+            self._editing_item = item
+            self._editing_original_text = item.text()
+
+            # Temporarily clear the item's display text to prevent overlap
+            # Block signals to avoid triggering on_cell_edited
+            self.controls_table.blockSignals(True)
+            item.setText("")
+            self.controls_table.blockSignals(False)
+
     def on_cell_edited(self, item):
-        """Handle cell editing (only Action Map and Action columns are editable)"""
-        if item.column() in [0, 1]:  # Action Map or Action column
-            self.statusBar().showMessage(f"Label updated: {item.text()}")
-            # Note: This is just a UI change, actual XML update would be in export
+        """Handle cell editing (only column 2: Action Override is editable)"""
+        if item.column() != 2:  # Only Action (Override) column is editable
+            return
+
+        # Clear editing state
+        self._editing_item = None
+        self._editing_original_text = None
+
+        # Get the binding data stored in the item
+        binding_data = item.data(Qt.ItemDataRole.UserRole)
+        if not binding_data:
+            self.statusBar().showMessage("Error: Could not save label override")
+            return
+
+        action_map_name, binding = binding_data
+        new_label = item.text().strip()
+
+        # If label is empty, remove the custom override (will fall back to auto-generated or global)
+        if not new_label:
+            try:
+                # Import with error handling for different execution contexts
+                try:
+                    from utils.label_overrides import get_override_manager
+                except ImportError:
+                    from ..utils.label_overrides import get_override_manager
+
+                override_manager = get_override_manager()
+                override_manager.remove_custom_override(binding.action_name)
+
+                # Clear the custom_label field to fall back to auto-generated/global
+                binding.custom_label = None
+
+                # Update the table to show the fallback label
+                fallback_label = LabelGenerator.get_action_label(binding.action_name, binding)
+                self.controls_table.blockSignals(True)
+                item.setText(fallback_label)
+                self.controls_table.blockSignals(False)
+
+                # Update graphics widget
+                self.graphics_widget.load_profile(self.current_profile)
+
+                self.statusBar().showMessage(f"Custom label removed for '{binding.action_name}' - using auto-generated label")
+            except Exception as e:
+                self.statusBar().showMessage(f"Error removing label override: {str(e)}")
+                print(f"Error removing label override: {e}")
+            return
+
+        # Save to override manager
+        try:
+            # Import with error handling for different execution contexts
+            try:
+                from utils.label_overrides import get_override_manager
+            except ImportError:
+                from ..utils.label_overrides import get_override_manager
+
+            override_manager = get_override_manager()
+            override_manager.set_custom_override(binding.action_name, new_label)
+
+            # Update binding's custom_label field
+            binding.custom_label = new_label
+
+            # Update graphics widget
+            self.graphics_widget.load_profile(self.current_profile)
+
+            self.statusBar().showMessage(f"Label override saved: '{binding.action_name}' → '{new_label}'")
+        except Exception as e:
+            self.statusBar().showMessage(f"Error saving label override: {str(e)}")
+            print(f"Error saving label override: {e}")
 
     def export_csv(self):
         """Export profile to CSV"""
@@ -432,14 +702,23 @@ class MainWindow(QMainWindow):
             with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
 
-                # Write header
-                writer.writerow(["Action Map", "Action", "Input Code", "Input Label", "Device"])
+                # Determine columns based on detailed view setting
+                is_detailed = self.show_detailed_checkbox.isChecked()
+
+                if is_detailed:
+                    # Write header for detailed view (all columns)
+                    writer.writerow(["Action Map", "Action (Original)", "Action (Override)", "Input Code", "Input Label", "Device"])
+                    visible_cols = [0, 1, 2, 3, 4, 5]
+                else:
+                    # Write header for default view (3 columns)
+                    writer.writerow(["Action Map", "Action", "Device"])
+                    visible_cols = [0, 2, 5]  # Action Map, Action (Override), Device
 
                 # Write visible rows only
                 for row in range(self.controls_table.rowCount()):
                     if not self.controls_table.isRowHidden(row):
                         row_data = []
-                        for col in range(self.controls_table.columnCount()):
+                        for col in visible_cols:
                             item = self.controls_table.item(row, col)
                             row_data.append(item.text() if item else "")
                         writer.writerow(row_data)
@@ -489,19 +768,30 @@ class MainWindow(QMainWindow):
             elements.append(info)
             elements.append(Spacer(1, 0.3 * inch))
 
-            # Collect visible rows
-            table_data = [["Action Map", "Action", "Input Code", "Input Label", "Device"]]
+            # Determine columns based on detailed view setting
+            is_detailed = self.show_detailed_checkbox.isChecked()
+
+            if is_detailed:
+                # Detailed view header and columns
+                table_data = [["Action Map", "Action (Original)", "Action (Override)", "Input Code", "Input Label", "Device"]]
+                visible_cols = [0, 1, 2, 3, 4, 5]
+                col_widths = [1.3*inch, 1.5*inch, 1.5*inch, 1*inch, 1.5*inch, 1.2*inch]
+            else:
+                # Default view header and columns
+                table_data = [["Action Map", "Action", "Device"]]
+                visible_cols = [0, 2, 5]
+                col_widths = [2.5*inch, 4*inch, 2.5*inch]
 
             for row in range(self.controls_table.rowCount()):
                 if not self.controls_table.isRowHidden(row):
                     row_data = []
-                    for col in range(self.controls_table.columnCount()):
+                    for col in visible_cols:
                         item = self.controls_table.item(row, col)
                         row_data.append(item.text() if item else "")
                     table_data.append(row_data)
 
             # Create table
-            table = Table(table_data, colWidths=[1.5*inch, 2*inch, 1.2*inch, 2*inch, 1.5*inch])
+            table = Table(table_data, colWidths=col_widths)
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -575,13 +865,22 @@ class MainWindow(QMainWindow):
             # Control bindings table
             doc.add_heading("Control Bindings", 2)
 
+            # Determine columns based on detailed view setting
+            is_detailed = self.show_detailed_checkbox.isChecked()
+
+            if is_detailed:
+                headers = ["Action Map", "Action (Original)", "Action (Override)", "Input Code", "Input Label", "Device"]
+                visible_cols = [0, 1, 2, 3, 4, 5]
+            else:
+                headers = ["Action Map", "Action", "Device"]
+                visible_cols = [0, 2, 5]
+
             # Create table
-            table = doc.add_table(rows=1, cols=5)
+            table = doc.add_table(rows=1, cols=len(headers))
             table.style = 'Light Grid Accent 1'
 
             # Header row
             header_cells = table.rows[0].cells
-            headers = ["Action Map", "Action", "Input Code", "Input Label", "Device"]
             for i, header in enumerate(headers):
                 header_cells[i].text = header
                 # Make header bold
@@ -593,9 +892,9 @@ class MainWindow(QMainWindow):
             for row in range(self.controls_table.rowCount()):
                 if not self.controls_table.isRowHidden(row):
                     row_cells = table.add_row().cells
-                    for col in range(self.controls_table.columnCount()):
+                    for i, col in enumerate(visible_cols):
                         item = self.controls_table.item(row, col)
-                        row_cells[col].text = item.text() if item else ""
+                        row_cells[i].text = item.text() if item else ""
 
             # Save document
             doc.save(file_path)

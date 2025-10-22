@@ -1,0 +1,60 @@
+{
+  "device_name": "VPC MongoosT-50CM3 Right",
+  "svg_style": {
+    "font_family": "Arial",
+    "font_size": 36,
+    "fill": "black",
+    "text_anchor": "middle",
+    "stroke": "white",
+    "stroke_width": 2,
+    "text_wrap": {
+      "enabled": false,
+      "max_words_per_line": 2,
+      "line_spacing": 1.2
+    },
+    "background": {
+      "enabled": false,
+      "fill": "white",
+      "opacity": 0.8,
+      "padding": 2,
+      "border_radius": 2
+    }
+  },
+  "unmapped_table": {
+    "enabled": true,
+    "x": 20,
+    "y": 20,
+    "font_size": 9,
+    "font_family": "Arial",
+    "fill": "black",
+    "stroke": "white",
+    "stroke_width": 1,
+    "row_height": 18,
+    "column_widths": [200, 150],
+    "background": {
+      "enabled": true,
+      "fill": "white",
+      "opacity": 0.9,
+      "border_color": "black",
+      "border_width": 1
+    }
+  },
+  "description": "SVG overlay configuration for VPC MongoosT-50CM3 Right stick template",
+  "_comments": {
+    "stroke": "Set to a color like 'white' or '#FFFFFF' to add an outline around text",
+    "stroke_width": "Width of the stroke in pixels (e.g., 2)",
+    "text_wrap.enabled": "Set to true to wrap text across multiple lines",
+    "text_wrap.max_words_per_line": "Maximum number of words per line (e.g., 2)",
+    "text_wrap.line_spacing": "Multiplier for line height (e.g., 1.2 = 120% of font size)",
+    "background.enabled": "Set to true to add a background rectangle behind text",
+    "background.fill": "Background color",
+    "background.opacity": "Background transparency (0.0-1.0)",
+    "background.padding": "Space around text in pixels",
+    "background.border_radius": "Rounded corners in pixels",
+    "unmapped_table.enabled": "Set to true to show unmapped buttons in a table",
+    "unmapped_table.x": "X coordinate of table top-left corner",
+    "unmapped_table.y": "Y coordinate of table top-left corner",
+    "unmapped_table.column_widths": "Array of column widths [action_column, input_column]",
+    "unmapped_table.row_height": "Height of each table row in pixels"
+  }
+}

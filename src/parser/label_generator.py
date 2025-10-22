@@ -3,7 +3,10 @@ Label generator for converting action names to human-readable strings
 """
 
 import re
-from typing import Dict
+from typing import Dict, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..models.profile_model import ActionBinding
 
 
 class LabelGenerator:
@@ -41,7 +44,12 @@ class LabelGenerator:
 
     @staticmethod
     def generate_action_label(action_name: str) -> str:
-        """Convert action name to human-readable label"""
+        """
+        Convert action name to human-readable label (auto-generated).
+
+        Note: This generates the label from the action name. For override support,
+        use get_action_label() instead.
+        """
         # Check for common prefixes
         prefixes = {
             'v_': '',  # vehicle
@@ -65,6 +73,49 @@ class LabelGenerator:
         readable = ' '.join(words)
 
         return prefix_text + readable
+
+    @staticmethod
+    def get_action_label(action_name: str, binding: Optional['ActionBinding'] = None,
+                        use_override: bool = True) -> str:
+        """
+        Get the action label with override support.
+
+        Priority:
+        1. If binding has custom_label, use it
+        2. Check override manager for label override
+        3. Fall back to auto-generated label
+
+        Args:
+            action_name: The action name (e.g., "v_attack1")
+            binding: Optional ActionBinding object (may contain custom_label)
+            use_override: Whether to check for label overrides (default: True)
+
+        Returns:
+            The appropriate label string
+        """
+        # Priority 1: Check if binding has a custom label
+        if binding is not None and hasattr(binding, 'custom_label') and binding.custom_label:
+            return binding.custom_label
+
+        # Priority 2: Check override manager
+        if use_override:
+            try:
+                # Import with error handling for different execution contexts
+                try:
+                    from utils.label_overrides import get_override_manager
+                except ImportError:
+                    from ..utils.label_overrides import get_override_manager
+
+                override_manager = get_override_manager()
+                override_label = override_manager.get_override_label(action_name)
+                if override_label:
+                    return override_label
+            except Exception as e:
+                # If override system fails, fall back to auto-generated
+                pass  # Silently fail and use auto-generated label
+
+        # Priority 3: Fall back to auto-generated label
+        return LabelGenerator.generate_action_label(action_name)
 
     @staticmethod
     def generate_input_label(input_code: str) -> str:

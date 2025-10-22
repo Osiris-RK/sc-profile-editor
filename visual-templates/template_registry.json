@@ -1,9 +1,11 @@
 {
   "templates": [
     {
-      "id": "vkb_gladiator_evo",
+      "id": "vkb_gladiator_evo_right",
       "name": "VKB Gladiator EVO (Right)",
-      "image": "EVO.jpg",
+      "image": "vkb_gladiator_evo_right/vkb_gladiator_evo_right.png",
+      "template_image": "vkb_gladiator_evo_right/vkb_gladiator_evo_right_template.png",
+      "overlay": "vkb_gladiator_evo_right/vkb_gladiator_evo_right_overlay.svg",
       "device_match_patterns": [
         "VKBsim Gladiator EVO R",
         "Gladiator EVO R"
@@ -12,113 +14,16 @@
       "buttons": {}
     },
     {
-      "id": "vkb_gladiator_evo_omni",
-      "name": "VKB Gladiator EVO OMNI (Left)",
-      "image": "EVO_OMNI.jpg",
+      "id": "vpc_mt50cm3_right",
+      "name": "VPC MT-50CM3 (Right)",
+      "image": "vpc_mt50cm3_right/vpc_mt50cm3_right.png",
+      "template_image": "vpc_mt50cm3_right/vpc_mt50cm3_right_template.png",
+      "overlay": "vpc_mt50cm3_right/vpc_mt50cm3_right_template_overlay.svg",
       "device_match_patterns": [
-        "VKBsim Gladiator EVO L",
-        "Gladiator EVO L",
-        "Gladiator OMNI"
-      ],
-      "type": "joystick",
-      "buttons": {}
-    },
-    {
-      "id": "vkb_fsm_ga",
-      "name": "VKB FSM-GA Button Panel",
-      "image": "FSM_GA.jpg",
-      "device_match_patterns": [
-        "VKB FSM",
-        "FSM-GA"
-      ],
-      "type": "button_box",
-      "buttons": {}
-    },
-    {
-      "id": "vkb_gnx_sem",
-      "name": "VKB GNX-SEM Space Sim Module",
-      "image": "SEM.jpg",
-      "device_match_patterns": [
-        "VKB SEM",
-        "GNX-SEM"
-      ],
-      "type": "button_box",
-      "buttons": {}
-    },
-    {
-      "id": "vkb_gnx_thq",
-      "name": "VKB GNX-THQ Throttle Quadrant",
-      "image": "THQ.jpg",
-      "device_match_patterns": [
-        "VKB THQ",
-        "GNX-THQ"
-      ],
-      "type": "throttle",
-      "buttons": {}
-    },
-    {
-      "id": "thrustmaster_t16000m",
-      "name": "Thrustmaster T.16000M FCS",
-      "image": "90430529-e565f700-e0c7-11ea-897b-3e6d217ff1bf-1312709170.png",
-      "device_match_patterns": [
-        "T.16000M",
-        "T16000M",
-        "Thrustmaster"
-      ],
-      "type": "joystick",
-      "buttons": {}
-    },
-    {
-      "id": "virpil_vpc_panel_1",
-      "name": "Virpil VPC Control Panel #1",
-      "image": "dueuwYDZrunoZjwg269swVmgLz1P2aVvMA.png",
-      "device_match_patterns": [
-        "VPC Control Panel #1",
-        "Virpil Panel 1"
-      ],
-      "type": "button_box",
-      "buttons": {}
-    },
-    {
-      "id": "virpil_vpc_panel_2",
-      "name": "Virpil VPC Control Panel #2",
-      "image": "kSkjJX8gFGei1qZ4Knb-wWWpyAkJ01fU0g.png",
-      "device_match_patterns": [
-        "VPC Control Panel #2",
-        "Virpil Panel 2"
-      ],
-      "type": "button_box",
-      "buttons": {}
-    },
-    {
-      "id": "virpil_alpha_prime_left",
-      "name": "Virpil VPC Alpha Prime Grip (Left)",
-      "image": "f5jItThLgKaRtagIyhlTYX9_-K2wNM3m2g.png",
-      "device_match_patterns": [
-        "VPC Alpha Prime Grip - L",
-        "Alpha Prime L"
-      ],
-      "type": "joystick",
-      "buttons": {}
-    },
-    {
-      "id": "virpil_alpha_prime_right",
-      "name": "Virpil VPC Alpha Prime Grip (Right)",
-      "image": "R8R1BxGZP0P3r3_uWKSaGqQHOZC8tBGtTQ.png",
-      "device_match_patterns": [
-        "VPC Alpha Prime Grip - R",
-        "Alpha Prime R"
-      ],
-      "type": "joystick",
-      "buttons": {}
-    },
-    {
-      "id": "vkb_gladiator_nxt",
-      "name": "VKB Gladiator NXT",
-      "image": "image.png",
-      "device_match_patterns": [
-        "Gladiator NXT",
-        "VKB NXT"
+        "RIGHT VPC Stick MT-50CM3",
+        "VPC MT-50CM3",
+        "VirPil MT-50CM3 Right",
+        "VPC Stick MT-50CM3"
       ],
       "type": "joystick",
       "buttons": {}

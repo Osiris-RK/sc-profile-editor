@@ -21,7 +21,7 @@ wheels/
 *.egg
 
 # Virtual Environment
-venv/
+.venv/
 env/
 ENV/
 
@@ -46,3 +46,6 @@ htmlcov/
 .pytest_cache/
 /CLAUDE.md
 /.claude/
+
+# Custom label overrides (user-specific)
+label_overrides_custom.json
