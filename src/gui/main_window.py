@@ -6,14 +6,26 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QPushButton, QLabel, QFileDialog, QMessageBox,
                               QTextEdit, QTableWidget, QTableWidgetItem, QSplitter,
                               QLineEdit, QComboBox, QGroupBox, QCheckBox, QTabWidget,
-                              QStyledItemDelegate)
-from PyQt6.QtCore import Qt, QSortFilterProxyModel, QTimer
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
+                              QStyledItemDelegate, QDialog, QTextBrowser)
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QTimer, QUrl
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QDesktopServices, QPixmap, QCursor
 import sys
 import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # If not running as PyInstaller bundle, use the project root
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    return os.path.join(base_path, relative_path)
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -97,6 +109,12 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(title_label)
         header_layout.addStretch()
 
+        # Import button (leftmost)
+        import_btn = QPushButton("Import Profile XML")
+        import_btn.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #4CAF50; color: white;")
+        import_btn.clicked.connect(self.import_profile)
+        header_layout.addWidget(import_btn)
+
         # Export buttons
         self.export_csv_btn = QPushButton("Export CSV")
         self.export_csv_btn.setStyleSheet("padding: 10px 20px; font-size: 14px;")
@@ -116,10 +134,11 @@ class MainWindow(QMainWindow):
         self.export_word_btn.setEnabled(False)
         header_layout.addWidget(self.export_word_btn)
 
-        import_btn = QPushButton("Import Profile XML")
-        import_btn.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #4CAF50; color: white;")
-        import_btn.clicked.connect(self.import_profile)
-        header_layout.addWidget(import_btn)
+        # Help button (rightmost)
+        help_btn = QPushButton("Help")
+        help_btn.setStyleSheet("padding: 10px 20px; font-size: 14px;")
+        help_btn.clicked.connect(self.show_help)
+        header_layout.addWidget(help_btn)
 
         main_layout.addLayout(header_layout)
 
@@ -226,6 +245,85 @@ class MainWindow(QMainWindow):
         templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "visual-templates")
         self.graphics_widget = DeviceGraphicsWidget(templates_dir)
         self.tab_widget.addTab(self.graphics_widget, "Device Graphics")
+
+        # Footer with PayPal donation and Discord link
+        footer_layout = QHBoxLayout()
+        footer_layout.addStretch()
+
+        # Discord "Join Today" button
+        self.discord_button = QLabel()
+        discord_image_path = get_resource_path(os.path.join("assets", "join_today.png"))
+
+        # Try to load Discord image, fall back to text if not found
+        if os.path.exists(discord_image_path):
+            discord_pixmap = QPixmap(discord_image_path)
+            # Scale to reasonable size (max height 30px)
+            if discord_pixmap.height() > 30:
+                discord_pixmap = discord_pixmap.scaledToHeight(30, Qt.TransformationMode.SmoothTransformation)
+            self.discord_button.setPixmap(discord_pixmap)
+        else:
+            # Fallback to styled text button
+            self.discord_button.setText("Join Discord")
+            self.discord_button.setStyleSheet("""
+                QLabel {
+                    background-color: #5865F2;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                QLabel:hover {
+                    background-color: #4752C4;
+                }
+            """)
+
+        self.discord_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.discord_button.mousePressEvent = self.open_discord_link
+        footer_layout.addWidget(self.discord_button)
+
+        # Spacer between buttons
+        footer_layout.addSpacing(15)
+
+        # PayPal donation label
+        donation_label = QLabel("Support this project:")
+        donation_label.setStyleSheet("font-size: 12px; color: #666; margin-right: 5px;")
+        footer_layout.addWidget(donation_label)
+
+        # PayPal button (clickable label)
+        self.paypal_button = QLabel()
+        paypal_image_path = get_resource_path(os.path.join("assets", "paypal.png"))
+
+        # Try to load PayPal image, fall back to text if not found
+        if os.path.exists(paypal_image_path):
+            pixmap = QPixmap(paypal_image_path)
+            # Scale to reasonable size (max height 30px)
+            if pixmap.height() > 30:
+                pixmap = pixmap.scaledToHeight(30, Qt.TransformationMode.SmoothTransformation)
+            self.paypal_button.setPixmap(pixmap)
+        else:
+            # Fallback to styled text button
+            self.paypal_button.setText("Donate via PayPal")
+            self.paypal_button.setStyleSheet("""
+                QLabel {
+                    background-color: #0070ba;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                QLabel:hover {
+                    background-color: #005ea6;
+                }
+            """)
+
+        self.paypal_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.paypal_button.mousePressEvent = self.open_paypal_donation
+        footer_layout.addWidget(self.paypal_button)
+
+        footer_layout.addStretch()
+        main_layout.addLayout(footer_layout)
 
         # Status bar
         self.statusBar().showMessage("Ready")
@@ -905,6 +1003,186 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Export Error", f"Failed to export Word document:\n{str(e)}")
             self.statusBar().showMessage("Word export failed")
+
+    def show_help(self):
+        """Show the user guide in a dialog"""
+        # Create help dialog
+        help_dialog = QDialog(self)
+        help_dialog.setWindowTitle("User Guide - Star Citizen Profile Viewer")
+        help_dialog.setGeometry(100, 100, 900, 700)
+
+        # Layout
+        layout = QVBoxLayout()
+        help_dialog.setLayout(layout)
+
+        # Text browser for displaying markdown as HTML
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+
+        # Load the USER_GUIDE.md file
+        user_guide_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "USER_GUIDE.md"
+        )
+
+        try:
+            with open(user_guide_path, 'r', encoding='utf-8') as f:
+                markdown_content = f.read()
+
+            # Convert markdown to HTML (basic conversion)
+            html_content = self.markdown_to_html(markdown_content)
+            browser.setHtml(html_content)
+
+        except FileNotFoundError:
+            browser.setHtml("<h1>User Guide Not Found</h1><p>The USER_GUIDE.md file could not be found.</p>")
+        except Exception as e:
+            browser.setHtml(f"<h1>Error Loading Guide</h1><p>{str(e)}</p>")
+
+        layout.addWidget(browser)
+
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(help_dialog.close)
+        layout.addWidget(close_btn)
+
+        help_dialog.exec()
+
+    def markdown_to_html(self, markdown_text):
+        """Convert markdown to HTML (basic implementation)"""
+        html = "<html><head><style>"
+        html += "body { font-family: Arial, sans-serif; line-height: 1.8; padding: 20px; font-size: 14px; }"
+        html += "h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; font-size: 32px; font-weight: bold; margin-top: 20px; }"
+        html += "h2 { color: #34495e; border-bottom: 2px solid #95a5a6; padding-bottom: 5px; margin-top: 30px; font-size: 26px; font-weight: bold; }"
+        html += "h3 { color: #555; margin-top: 20px; font-size: 20px; font-weight: bold; }"
+        html += "h4 { color: #666; margin-top: 15px; font-size: 16px; font-weight: bold; }"
+        html += "p { font-size: 14px; margin: 10px 0; }"
+        html += "li { font-size: 14px; margin: 5px 0; }"
+        html += "a { color: #3498db; text-decoration: none; }"
+        html += "a:hover { text-decoration: underline; }"
+        html += "code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px; }"
+        html += "pre { background-color: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 13px; }"
+        html += "ul { margin-left: 20px; font-size: 14px; }"
+        html += "ol { margin-left: 20px; font-size: 14px; }"
+        html += "strong { color: #2c3e50; font-weight: bold; }"
+        html += "blockquote { border-left: 4px solid #3498db; padding-left: 15px; color: #555; font-style: italic; font-size: 14px; }"
+        html += "table { border-collapse: collapse; width: 100%; margin: 20px 0; }"
+        html += "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }"
+        html += "th { background-color: #3498db; color: white; font-weight: bold; }"
+        html += "tr:nth-child(even) { background-color: #f2f2f2; }"
+        html += "</style></head><body>"
+
+        lines = markdown_text.split('\n')
+        in_code_block = False
+        in_list = False
+
+        for line in lines:
+            # Code blocks
+            if line.strip().startswith('```'):
+                if in_code_block:
+                    html += "</pre>"
+                    in_code_block = False
+                else:
+                    html += "<pre><code>"
+                    in_code_block = True
+                continue
+
+            if in_code_block:
+                html += line + "\n"
+                continue
+
+            # Headers (with anchor IDs for links)
+            if line.startswith('# '):
+                header_text = line[2:].strip()
+                anchor_id = self.create_anchor_id(header_text)
+                html += f"<h1 id='{anchor_id}'>{header_text}</h1>"
+            elif line.startswith('## '):
+                header_text = line[3:].strip()
+                anchor_id = self.create_anchor_id(header_text)
+                html += f"<h2 id='{anchor_id}'>{header_text}</h2>"
+            elif line.startswith('### '):
+                header_text = line[4:].strip()
+                anchor_id = self.create_anchor_id(header_text)
+                html += f"<h3 id='{anchor_id}'>{header_text}</h3>"
+            elif line.startswith('#### '):
+                header_text = line[5:].strip()
+                anchor_id = self.create_anchor_id(header_text)
+                html += f"<h4 id='{anchor_id}'>{header_text}</h4>"
+            # Ordered lists
+            elif line.strip().startswith(tuple(f"{i}. " for i in range(1, 100))):
+                if not in_list:
+                    html += "<ol>"
+                    in_list = 'ol'
+                # Extract the list item text (after the number and period)
+                item_text = line.strip().split('. ', 1)[1] if '. ' in line else line.strip()
+                html += f"<li>{self.format_inline_markdown(item_text)}</li>"
+            # Unordered lists
+            elif line.strip().startswith('- ') or line.strip().startswith('* '):
+                if in_list != 'ul':
+                    if in_list:
+                        html += f"</{in_list}>"
+                    html += "<ul>"
+                    in_list = 'ul'
+                html += f"<li>{self.format_inline_markdown(line.strip()[2:])}</li>"
+            # Horizontal rule
+            elif line.strip() == '---':
+                if in_list:
+                    html += f"</{in_list}>"
+                    in_list = False
+                html += "<hr/>"
+            # Empty line
+            elif not line.strip():
+                if in_list:
+                    html += f"</{in_list}>"
+                    in_list = False
+                html += "<br/>"
+            # Regular paragraph
+            else:
+                if in_list:
+                    html += f"</{in_list}>"
+                    in_list = False
+                html += f"<p>{self.format_inline_markdown(line)}</p>"
+
+        if in_list:
+            html += f"</{in_list}>"
+
+        html += "</body></html>"
+        return html
+
+    def create_anchor_id(self, header_text):
+        """Create an anchor ID from header text (GitHub-style)"""
+        import re
+        # Convert to lowercase
+        anchor = header_text.lower()
+        # Replace spaces with hyphens
+        anchor = anchor.replace(' ', '-')
+        # Remove special characters except hyphens
+        anchor = re.sub(r'[^\w\-]', '', anchor)
+        return anchor
+
+    def format_inline_markdown(self, text):
+        """Format inline markdown (bold, italic, code, links)"""
+        import re
+
+        # Bold
+        text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+        # Italic
+        text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
+        # Inline code
+        text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+        # Links (handle both URLs and anchors)
+        text = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', text)
+
+        return text
+
+    def open_paypal_donation(self, event):
+        """Open PayPal donation link in browser"""
+        paypal_url = "https://paypal.me/RighteousKill"
+        QDesktopServices.openUrl(QUrl(paypal_url))
+
+    def open_discord_link(self, event):
+        """Open Discord invite link in browser"""
+        discord_url = "https://discord.gg/Etyj4a5tjz"
+        QDesktopServices.openUrl(QUrl(discord_url))
 
 
 if __name__ == "__main__":

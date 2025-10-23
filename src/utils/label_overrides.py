@@ -10,6 +10,7 @@ Load priority: custom → global → auto-generated (via LabelGenerator)
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Optional
 import shutil
@@ -27,15 +28,30 @@ class LabelOverrideManager:
         Initialize the label override manager.
 
         Args:
-            base_path: Base directory for override files. If None, uses project root.
+            base_path: Base directory for override files. If None, uses appropriate locations.
         """
         if base_path is None:
-            # Default to project root directory
-            base_path = Path(__file__).parent.parent.parent
-
-        self.base_path = Path(base_path)
-        self.global_file_path = self.base_path / self.GLOBAL_OVERRIDE_FILE
-        self.custom_file_path = self.base_path / self.CUSTOM_OVERRIDE_FILE
+            # For global file: use exe directory (bundled with app)
+            # For custom file: use user's AppData directory (writable)
+            if getattr(sys, 'frozen', False):
+                # Running as compiled exe
+                exe_dir = Path(sys.executable).parent
+                self.global_file_path = exe_dir / self.GLOBAL_OVERRIDE_FILE
+                # Custom file goes in user's AppData
+                app_data = Path(os.environ.get('APPDATA', os.path.expanduser('~')))
+                custom_dir = app_data / 'SCProfileViewer'
+                custom_dir.mkdir(parents=True, exist_ok=True)
+                self.custom_file_path = custom_dir / self.CUSTOM_OVERRIDE_FILE
+            else:
+                # Running from source - use project root for both
+                base_path = Path(__file__).parent.parent.parent
+                self.global_file_path = base_path / self.GLOBAL_OVERRIDE_FILE
+                self.custom_file_path = base_path / self.CUSTOM_OVERRIDE_FILE
+        else:
+            # Custom base path provided
+            base_path = Path(base_path)
+            self.global_file_path = base_path / self.GLOBAL_OVERRIDE_FILE
+            self.custom_file_path = base_path / self.CUSTOM_OVERRIDE_FILE
 
         # Cache for loaded overrides
         self._custom_overrides: Optional[Dict[str, str]] = None
