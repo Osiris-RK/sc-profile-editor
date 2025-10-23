@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QGraphicsPixmapItem, QGraphicsTextItem, QGraphicsRectItem,
                               QFileDialog, QMessageBox)
 from PyQt6.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QBrush, QImage
-from PyQt6.QtCore import Qt, QRectF, QPointF
+from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 class DeviceGraphicsWidget(QWidget):
     """Widget for displaying device with control annotations"""
+
+    # Signal emitted when export availability changes
+    export_available_changed = pyqtSignal(bool)
 
     def __init__(self, templates_dir: str):
         super().__init__()
@@ -47,11 +50,6 @@ class DeviceGraphicsWidget(QWidget):
         self.device_combo = QComboBox()
         self.device_combo.currentIndexChanged.connect(self.on_device_changed)
         selection_layout.addWidget(self.device_combo, 1)
-
-        self.export_graphic_btn = QPushButton("Export Graphic")
-        self.export_graphic_btn.clicked.connect(self.export_graphic)
-        self.export_graphic_btn.setEnabled(False)
-        selection_layout.addWidget(self.export_graphic_btn)
 
         layout.addLayout(selection_layout)
 
@@ -102,7 +100,7 @@ class DeviceGraphicsWidget(QWidget):
         if not device:
             self.scene.clear()
             self.status_label.setText("No device selected")
-            self.export_graphic_btn.setEnabled(False)
+            self.export_available_changed.emit(False)
             return
 
         self.current_device = device
@@ -119,7 +117,7 @@ class DeviceGraphicsWidget(QWidget):
         if not template:
             self.scene.clear()
             self.status_label.setText("No template available for this device")
-            self.export_graphic_btn.setEnabled(False)
+            self.export_available_changed.emit(False)
             return
 
         self.current_template = template
@@ -128,7 +126,7 @@ class DeviceGraphicsWidget(QWidget):
         if not os.path.exists(template.image_path):
             self.scene.clear()
             self.status_label.setText(f"Template image not found: {template.image_path}")
-            self.export_graphic_btn.setEnabled(False)
+            self.export_available_changed.emit(False)
             return
 
         # Clear scene
@@ -139,7 +137,7 @@ class DeviceGraphicsWidget(QWidget):
 
         if pixmap.isNull():
             self.status_label.setText(f"Failed to load image: {template.image_path}")
-            self.export_graphic_btn.setEnabled(False)
+            self.export_available_changed.emit(False)
             return
 
         # Add image to scene
@@ -153,7 +151,7 @@ class DeviceGraphicsWidget(QWidget):
         self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
         self.status_label.setText(f"Loaded: {template.name}")
-        self.export_graphic_btn.setEnabled(True)
+        self.export_available_changed.emit(True)
 
     def add_annotations(self):
         """Add control annotations to the device graphic"""

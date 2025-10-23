@@ -35,6 +35,7 @@ from parser.label_generator import LabelGenerator
 from models.profile_model import ControlProfile
 from gui.device_graphics import DeviceGraphicsWidget
 from utils.settings import AppSettings
+from utils.version import get_version
 
 
 class SelectAllDelegate(QStyledItemDelegate):
@@ -70,7 +71,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Star Citizen Profile Viewer")
+        self.version = get_version()
+        self.setWindowTitle(f"Star Citizen Profile Viewer v{self.version}")
         self.setGeometry(100, 100, 1200, 800)
 
         # Initialize settings manager
@@ -104,7 +106,7 @@ class MainWindow(QMainWindow):
 
         # Header
         header_layout = QHBoxLayout()
-        title_label = QLabel("Star Citizen Profile Viewer")
+        title_label = QLabel(f"Star Citizen Profile Viewer v{self.version}")
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin: 10px;")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
@@ -133,6 +135,12 @@ class MainWindow(QMainWindow):
         self.export_word_btn.clicked.connect(self.export_word)
         self.export_word_btn.setEnabled(False)
         header_layout.addWidget(self.export_word_btn)
+
+        self.export_graphic_btn = QPushButton("Export Graphic")
+        self.export_graphic_btn.setStyleSheet("padding: 10px 20px; font-size: 14px;")
+        self.export_graphic_btn.clicked.connect(self.export_graphic)
+        self.export_graphic_btn.setEnabled(False)
+        header_layout.addWidget(self.export_graphic_btn)
 
         # Help button (rightmost)
         help_btn = QPushButton("Help")
@@ -244,6 +252,7 @@ class MainWindow(QMainWindow):
         # Tab 2: Device Graphics View
         templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "visual-templates")
         self.graphics_widget = DeviceGraphicsWidget(templates_dir)
+        self.graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
         self.tab_widget.addTab(self.graphics_widget, "Device Graphics")
 
         # Footer with PayPal donation and Discord link
@@ -1004,11 +1013,16 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Export Error", f"Failed to export Word document:\n{str(e)}")
             self.statusBar().showMessage("Word export failed")
 
+    def export_graphic(self):
+        """Export device graphic - delegate to graphics widget"""
+        # Call the graphics widget's export method
+        self.graphics_widget.export_graphic()
+
     def show_help(self):
         """Show the user guide in a dialog"""
         # Create help dialog
         help_dialog = QDialog(self)
-        help_dialog.setWindowTitle("User Guide - Star Citizen Profile Viewer")
+        help_dialog.setWindowTitle(f"User Guide - Star Citizen Profile Viewer v{self.version}")
         help_dialog.setGeometry(100, 100, 900, 700)
 
         # Layout
