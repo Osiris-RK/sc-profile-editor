@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Device template directories for expanded HOTAS support:
+  - VKB Gladiator EVO Left (with Space Sim Module)
+  - Thrustmaster TWCS Throttle
+  - Virpil MongoosT-50CM3 Left and Right sticks
+- DEVICE_STATUS.md to track template development progress
+
+### In Progress
+- Creating device templates for v0.2.0 release
+
 ## [0.1.1] - 2025-10-24
 
 ### Added
