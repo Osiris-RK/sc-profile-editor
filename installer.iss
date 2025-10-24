@@ -2,7 +2,7 @@
 ; Created with Inno Setup
 
 #define MyAppName "Star Citizen Profile Viewer"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "SC Profile Tools"
 #define MyAppURL "https://github.com/yourusername/sc-profile-viewer"
 #define MyAppExeName "SCProfileViewer.exe"
