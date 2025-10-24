@@ -688,6 +688,29 @@ class MainWindow(QMainWindow):
         if not self.current_profile:
             return
 
+        # Check if user is currently editing a cell
+        current_item = self.controls_table.currentItem()
+        if current_item and current_item.column() == 2:  # Action (Override) column
+            # Check if there's an active editor widget
+            editor = self.controls_table.cellWidget(current_item.row(), current_item.column())
+            if not editor:
+                # Check if the item is in edit mode via QTableWidget's state
+                state = self.controls_table.state()
+                from PyQt6.QtWidgets import QAbstractItemView
+                if state == QAbstractItemView.State.EditingState:
+                    # There's an active edit - commit it by setting focus elsewhere
+                    # This will trigger the itemChanged signal with the current editor value
+                    self.controls_table.setCurrentItem(None)
+                    # Small delay to let the edit complete
+                    from PyQt6.QtCore import QTimer
+                    QTimer.singleShot(0, self._complete_toggle_view)
+                    return
+
+        # No active edit, proceed immediately
+        self._complete_toggle_view()
+
+    def _complete_toggle_view(self):
+        """Complete the view toggle after any pending edits are committed"""
         # Repopulate the table with the new view mode
         self.populate_controls_table()
 
@@ -707,13 +730,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Filters cleared - showing all {self.controls_table.rowCount()} bindings")
 
     def on_item_double_clicked(self, item):
-        """Handle double-click - hide the item text while editing"""
+        """Handle double-click - prepare for editing"""
         if item.column() == 2:  # Action (Override) column
             # Store the original text and item
             self._editing_item = item
             self._editing_original_text = item.text()
 
-            # Temporarily clear the item's display text to prevent overlap
+            # Clear the display text for clean editing experience
             # Block signals to avoid triggering on_cell_edited
             self.controls_table.blockSignals(True)
             item.setText("")
@@ -723,6 +746,12 @@ class MainWindow(QMainWindow):
         """Handle cell editing (only column 2: Action Override is editable)"""
         if item.column() != 2:  # Only Action (Override) column is editable
             return
+
+        # Get the new text from the editor
+        new_label = item.text().strip()
+
+        # Get stored original text
+        original_text = self._editing_original_text
 
         # Clear editing state
         self._editing_item = None
@@ -735,9 +764,9 @@ class MainWindow(QMainWindow):
             return
 
         action_map_name, binding = binding_data
-        new_label = item.text().strip()
 
-        # If label is empty, remove the custom override (will fall back to auto-generated or global)
+        # Check if user deleted everything or made no changes
+        # If so, remove the custom override (will fall back to auto-generated or global)
         if not new_label:
             try:
                 # Import with error handling for different execution contexts

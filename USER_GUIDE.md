@@ -168,13 +168,13 @@ The application includes templates for:
 
 - **Zoom**: Use your mouse wheel to zoom in/out
 - **Pan**: Click and drag to move around
-- **Export**: Right-click on the graphic to save as an image
+- **Export**: Click the "Export Graphic" button in the top header to save as an image
 
 ---
 
 ## Exporting Your Profile
 
-You can export your profile in three formats:
+You can export your profile in four formats. All export buttons are located in the top header for easy access:
 
 ### Export to CSV
 
@@ -222,9 +222,26 @@ The Word document includes:
 
 **Opens in:** Microsoft Word, Google Docs, LibreOffice Writer
 
+### Export Device Graphic
+
+**Best for:** Visual reference, printing controller layouts
+
+1. Switch to the **"Device Graphics"** tab
+2. Select your device from the dropdown
+3. Click the **"Export Graphic"** button in the top header
+4. Choose format (PNG or PDF) and location
+5. Click **Save**
+
+The graphic will include:
+- Device image with labeled controls
+- Your custom action labels
+- Clear, print-ready layout
+
+**Note:** The Export Graphic button is only enabled when a device with a template is loaded.
+
 ### Export Modes
 
-All export formats respect the **"Show Detailed"** checkbox:
+All table export formats (CSV, PDF, Word) respect the **"Show Detailed"** checkbox:
 - **Unchecked**: Exports simplified view (3 columns)
 - **Checked**: Exports detailed view (6 columns)
 
@@ -378,23 +395,27 @@ Currently, the application uses standard Qt shortcuts:
 ## Getting Help
 
 For issues, feature requests, or contributions:
-- Visit: https://github.com/anthropics/claude-code/issues
+- Join the Discord community (link in app footer)
 - Report bugs with steps to reproduce
 - Request new device templates
+- Share your custom label configurations
 - Suggest improvements
 
 ---
 
 ## Version Information
 
-This guide is for Star Citizen Profile Viewer v0.2
+This guide is for Star Citizen Profile Viewer v0.1.0
 
-**New in v0.2:**
+**Features in v0.1.0:**
 - Custom label override system
 - Show Detailed view toggle
 - Improved table editing with clean visual feedback
 - Global and custom label override files
 - Enhanced export formats with view mode support
+- Device graphics with SVG template system
+- Export Graphic button in main header
+- Version display in window title
 
 ---
 

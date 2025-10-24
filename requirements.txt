@@ -1,17 +1,21 @@
 # Star Citizen Profile Viewer - Dependencies
 
-# GUI Framework
-PyQt6>=6.6.0
+# Core Dependencies (Required for all builds)
+PyQt6>=6.6.0                # GUI framework
 PyQt6-SVG>=6.6.0            # SVG support for PyQt6
-
-# Document Generation
 python-docx>=1.1.0          # Word document generation
 reportlab>=4.0.0            # PDF generation
-fpdf2>=2.7.0                # Alternative PDF library
-
-# Image Processing
 Pillow>=10.1.0              # Image manipulation and graphics
-easyocr>=1.7.0              # OCR for template tag detection
 
-# Optional but useful
+# Optional Dependencies (Only for OCR-enabled builds)
+# These are excluded from standard builds via --exclude-module in build scripts
+# Uncomment if you need OCR for template development:
+# easyocr>=1.7.0            # OCR for template tag detection (requires torch, cv2)
+# torch>=2.0.0              # PyTorch (large dependency)
+# opencv-python>=4.8.0      # OpenCV for image processing
+
+# Build Tools
 pyinstaller>=6.3.0          # For building standalone executable
+
+# Note: The standard build (build_exe.py) excludes OCR dependencies
+# Use build_exe_with_ocr.py only if you need to create new device templates
