@@ -9,10 +9,12 @@ This document explains where different files are stored when running the applica
 **Read-Only Files (Bundled with Application):**
 - **Location:** Same folder as `SCProfileViewer.exe`
 - **Files:**
+  - `VERSION.TXT` - Application version number
   - `label_overrides.json` - Global default label overrides
   - `USER_GUIDE.md` - User documentation
   - `visual-templates/` - Device graphics templates
   - `example-profiles/` - Sample profiles
+  - `assets/` - Icons and images
 
 **User-Writable Files (Custom Settings):**
 - **Location:** `%APPDATA%\SCProfileViewer\`
