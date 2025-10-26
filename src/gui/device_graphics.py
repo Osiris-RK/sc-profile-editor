@@ -11,6 +11,8 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QFileDialog, QMessageBox)
 from PyQt6.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QBrush, QImage
 from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
+from PyQt6.QtSvgWidgets import QGraphicsSvgItem
+from PyQt6.QtSvg import QSvgRenderer
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -18,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from graphics.template_manager import TemplateManager, DeviceTemplate
 from models.profile_model import ControlProfile, Device, ActionBinding
 from parser.label_generator import LabelGenerator
+from utils.device_splitter import is_vkb_with_sem, get_base_stick_name
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class DeviceGraphicsWidget(QWidget):
         self.current_profile: ControlProfile = None
         self.current_device: Device = None
         self.current_template: DeviceTemplate = None
+        self.current_device_name: str = None  # Actual device name to display (may differ from current_device.product_name for split devices)
 
         self.setup_ui()
 
@@ -78,12 +82,36 @@ class DeviceGraphicsWidget(QWidget):
         for device in profile.devices:
             if device.device_type == 'joystick':  # Focus on joysticks for now
                 device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
-                template = self.template_manager.find_template(device.product_name or "")
 
-                if template:
-                    self.device_combo.addItem(f"{device_name} (Template available)", device)
+                # Check if this is a VKB device with SEM module
+                if is_vkb_with_sem(device_name):
+                    # Add two entries: base stick and SEM module
+                    base_stick_name = get_base_stick_name(device_name)
+
+                    # Check if templates exist for both
+                    base_template = self.template_manager.find_template(base_stick_name)
+                    sem_template = self.template_manager.find_template("VKB SEM")
+
+                    if base_template:
+                        # Store device and base stick name in item data as tuple
+                        self.device_combo.addItem(f"{base_stick_name} (Template available)", (device, base_stick_name))
+                    else:
+                        self.device_combo.addItem(f"{base_stick_name} (No template)", (device, base_stick_name))
+
+                    if sem_template:
+                        # Store device and "VKB SEM" name in item data as tuple
+                        self.device_combo.addItem(f"VKB SEM (Template available)", (device, "VKB SEM"))
+                    else:
+                        self.device_combo.addItem(f"VKB SEM (No template)", (device, "VKB SEM"))
                 else:
-                    self.device_combo.addItem(f"{device_name} (No template)", device)
+                    # Regular device (not split)
+                    template = self.template_manager.find_template(device.product_name or "")
+
+                    if template:
+                        # Store device and device name as tuple for consistency
+                        self.device_combo.addItem(f"{device_name} (Template available)", (device, device_name))
+                    else:
+                        self.device_combo.addItem(f"{device_name} (No template)", (device, device_name))
 
         if self.device_combo.count() == 0:
             self.status_label.setText("No devices with templates found")
@@ -96,23 +124,24 @@ class DeviceGraphicsWidget(QWidget):
         if index < 0:
             return
 
-        device = self.device_combo.itemData(index)
-        if not device:
+        item_data = self.device_combo.itemData(index)
+        if not item_data:
             self.scene.clear()
             self.status_label.setText("No device selected")
             self.export_available_changed.emit(False)
             return
 
-        self.current_device = device
+        # Item data is a tuple: (device, device_name)
+        self.current_device, self.current_device_name = item_data
         self.load_device_graphic()
 
     def load_device_graphic(self):
         """Load and display device graphic with annotations"""
-        if not self.current_device:
+        if not self.current_device or not self.current_device_name:
             return
 
-        # Find template for this device
-        template = self.template_manager.find_template(self.current_device.product_name or "")
+        # Find template for this device (use current_device_name for split devices)
+        template = self.template_manager.find_template(self.current_device_name)
 
         if not template:
             self.scene.clear()
@@ -132,20 +161,99 @@ class DeviceGraphicsWidget(QWidget):
         # Clear scene
         self.scene.clear()
 
-        # Load and display device image
-        pixmap = QPixmap(template.image_path)
+        # Check if the image is SVG or raster format
+        is_svg = template.image_path.lower().endswith('.svg')
 
-        if pixmap.isNull():
-            self.status_label.setText(f"Failed to load image: {template.image_path}")
-            self.export_available_changed.emit(False)
-            return
+        if is_svg:
+            # Check if this SVG contains template tags that need replacement
+            svg_has_overlay = (template.overlay_path and
+                             os.path.normpath(template.image_path) == os.path.normpath(template.overlay_path))
 
-        # Add image to scene
-        pixmap_item = QGraphicsPixmapItem(pixmap)
-        self.scene.addItem(pixmap_item)
+            if svg_has_overlay:
+                # Read SVG content and replace template tags before rendering
+                try:
+                    with open(template.image_path, 'r', encoding='utf-8') as f:
+                        svg_content = f.read()
 
-        # Add annotations
-        self.add_annotations()
+                    # Get bindings and create replacement map
+                    device_bindings = self.get_device_bindings()
+                    bindings_map = {}
+
+                    from parser.label_generator import LabelGenerator
+                    for action_map_name, binding in device_bindings:
+                        input_code = binding.input_code.strip()
+                        if not input_code or input_code.endswith('_ ') or input_code.endswith('_'):
+                            continue
+
+                        input_label = LabelGenerator.generate_input_label(binding.input_code)
+                        if ': ' in input_label:
+                            input_label = input_label.split(': ', 1)[1]
+
+                        if not input_label or not input_label.strip():
+                            continue
+
+                        action_label = LabelGenerator.get_action_label(binding.action_name, binding)
+                        bindings_map[input_label] = action_label
+
+                    # Replace template tags
+                    import re
+                    def replace_tag(match):
+                        tag_content = match.group(1).strip()
+                        return bindings_map.get(tag_content, tag_content)
+
+                    processed_svg = re.sub(r'\{\{\s*([^}]+)\s*\}\}', replace_tag, svg_content)
+
+                    # Render the processed SVG
+                    from PyQt6.QtCore import QByteArray
+                    renderer = QSvgRenderer(QByteArray(processed_svg.encode('utf-8')))
+
+                except Exception as e:
+                    logger.error(f"Error processing SVG template: {e}", exc_info=True)
+                    # Fall back to rendering without replacement
+                    renderer = QSvgRenderer(template.image_path)
+            else:
+                # No template tags, render as-is
+                renderer = QSvgRenderer(template.image_path)
+
+            if not renderer.isValid():
+                self.status_label.setText(f"Failed to load SVG: {template.image_path}")
+                self.export_available_changed.emit(False)
+                return
+
+            # Get the SVG's default size
+            svg_size = renderer.defaultSize()
+
+            # Create a QImage and render the SVG onto it
+            image = QImage(svg_size, QImage.Format.Format_ARGB32)
+            image.fill(Qt.GlobalColor.transparent)
+
+            painter = QPainter(image)
+            renderer.render(painter)
+            painter.end()
+
+            # Convert to pixmap and add to scene
+            pixmap = QPixmap.fromImage(image)
+            pixmap_item = QGraphicsPixmapItem(pixmap)
+            self.scene.addItem(pixmap_item)
+
+            # Add annotations if SVG doesn't have embedded overlay
+            if not svg_has_overlay:
+                self.add_annotations()
+        else:
+            # Load raster image (PNG, JPG, etc.)
+            pixmap = QPixmap(template.image_path)
+
+            if pixmap.isNull():
+                self.status_label.setText(f"Failed to load image: {template.image_path}")
+                self.export_available_changed.emit(False)
+                return
+
+            # Add image to scene
+            pixmap_item = QGraphicsPixmapItem(pixmap)
+            self.scene.addItem(pixmap_item)
+
+            # Add annotations for raster images
+            self.add_annotations()
 
         # Fit view to scene
         self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -507,18 +615,36 @@ class DeviceGraphicsWidget(QWidget):
 
     def get_device_bindings(self) -> list:
         """Get all bindings for the current device"""
-        if not self.current_device or not self.current_profile:
+        if not self.current_device or not self.current_profile or not self.current_device_name:
             return []
 
         bindings = []
         device_instance = self.current_device.instance
         device_type = self.current_device.device_type
 
+        # Get button range for this template (if it has one)
+        template = self.template_manager.find_template(self.current_device_name)
+        button_range = template.button_range if template and template.button_range else None
+
         for action_map in self.current_profile.action_maps:
             for binding in action_map.actions:
-                # Check if this binding is for this device
+                # Check if this binding is for this device instance
                 if device_type == 'joystick' and binding.input_code.startswith(f'js{device_instance}_'):
-                    bindings.append((action_map.name, binding))
+                    # If we have a button range, filter by it
+                    if button_range:
+                        from utils.device_splitter import extract_button_number
+                        button_num = extract_button_number(binding.input_code)
+
+                        # Only include if button is in range
+                        if button_num is not None:
+                            if button_range[0] <= button_num <= button_range[1]:
+                                bindings.append((action_map.name, binding))
+                        # For non-button inputs (axes, hats), only include for base device (lower button range)
+                        elif button_range[0] == 1:
+                            bindings.append((action_map.name, binding))
+                    else:
+                        # No button range filtering - include all bindings for this device
+                        bindings.append((action_map.name, binding))
 
         return bindings
 

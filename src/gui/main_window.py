@@ -36,6 +36,7 @@ from models.profile_model import ControlProfile
 from gui.device_graphics import DeviceGraphicsWidget
 from utils.settings import AppSettings
 from utils.version import get_version
+from utils.device_splitter import get_device_for_input
 
 
 class SelectAllDelegate(QStyledItemDelegate):
@@ -587,7 +588,9 @@ class MainWindow(QMainWindow):
                 # Try to find device name
                 for device in self.current_profile.devices:
                     if device.device_type == 'joystick' and device.instance == int(instance):
-                        return device.product_name if device.product_name else f"Joystick {instance}"
+                        device_name = device.product_name if device.product_name else f"Joystick {instance}"
+                        # Split composite devices (e.g., VKB Gladiator + SEM)
+                        return get_device_for_input(device_name, input_code)
                 return f"Joystick {instance}"
         elif 'mouse' in input_code.lower():
             return "Mouse"
