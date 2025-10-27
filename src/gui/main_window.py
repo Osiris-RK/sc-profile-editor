@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTextEdit, QTableWidget, QTableWidgetItem, QSplitter,
                               QLineEdit, QComboBox, QGroupBox, QCheckBox, QTabWidget,
                               QStyledItemDelegate, QDialog, QTextBrowser)
-from PyQt6.QtCore import Qt, QSortFilterProxyModel, QTimer, QUrl
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QTimer, QUrl, QEvent
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QDesktopServices, QPixmap, QCursor
 import sys
 import os
@@ -40,29 +40,27 @@ from utils.device_splitter import get_device_for_input
 
 
 class SelectAllDelegate(QStyledItemDelegate):
-    """Custom delegate that selects all text when editing starts"""
+    """Custom delegate - clean editing with proper text replacement"""
 
     def __init__(self, parent, main_window):
         super().__init__(parent)
         self.main_window = main_window
 
+    def createEditor(self, parent, option, index):
+        """Create editor with proper configuration"""
+        editor = QLineEdit(parent)
+        # Force solid white background and black text
+        editor.setStyleSheet("QLineEdit { background-color: white; color: black; }")
+        return editor
+
     def setEditorData(self, editor, index):
-        """Set the editor's data with the original text and select all"""
+        """Set editor data and select all for easy replacement"""
         if isinstance(editor, QLineEdit):
-            # Use the original text stored before editing started
-            if self.main_window._editing_original_text is not None:
-                editor.setText(self.main_window._editing_original_text)
-            else:
-                # Fallback to model data
-                super().setEditorData(editor, index)
-
-            # Select all text with a small delay to ensure the editor is ready
-            def select_text():
-                if editor and not editor.isHidden():
-                    editor.selectAll()
-                    editor.setFocus()
-
-            QTimer.singleShot(0, select_text)
+            # Get current text
+            text = index.model().data(index, Qt.ItemDataRole.DisplayRole)
+            editor.setText(text or "")
+            # Select all text so typing replaces it
+            editor.selectAll()
         else:
             super().setEditorData(editor, index)
 
@@ -239,7 +237,7 @@ class MainWindow(QMainWindow):
 
         # Track editing state
         self._editing_item = None
-        self._editing_original_text = None
+        self._editing_default_text = None  # Stores the default label (without custom override)
 
         # Track editable columns (column 2 is Action Override, editable only in detailed view)
         self.editable_columns = {2}  # Column 2: Action (Override)
@@ -508,11 +506,11 @@ class MainWindow(QMainWindow):
             self.controls_table.setColumnHidden(3, False)
             self.controls_table.setColumnHidden(4, False)
         else:
-            # Default view: Show only 3 columns (0: Action Map, 2: Action, 5: Device)
-            # Hide columns 1, 3, 4
+            # Default view: Show 4 columns (0: Action Map, 2: Action, 4: Input Label, 5: Device)
+            # Hide columns 1, 3
             self.controls_table.setColumnHidden(1, True)
             self.controls_table.setColumnHidden(3, True)
-            self.controls_table.setColumnHidden(4, True)
+            self.controls_table.setColumnHidden(4, False)  # Show Input Label
             self.controls_table.setColumnHidden(2, False)  # Show override column (as "Action")
 
         # Populate table
@@ -571,9 +569,10 @@ class MainWindow(QMainWindow):
             self.controls_table.setColumnWidth(4, 200)  # Input Label
             self.controls_table.setColumnWidth(5, 150)  # Device
         else:
-            self.controls_table.setColumnWidth(0, 250)  # Action Map
-            self.controls_table.setColumnWidth(2, 350)  # Action (Override)
-            self.controls_table.setColumnWidth(5, 200)  # Device
+            self.controls_table.setColumnWidth(0, 200)  # Action Map
+            self.controls_table.setColumnWidth(2, 250)  # Action (Override)
+            self.controls_table.setColumnWidth(4, 200)  # Input Label
+            self.controls_table.setColumnWidth(5, 150)  # Device
 
     def parse_device_from_input(self, input_code: str) -> str:
         """Parse device type from input code"""
@@ -735,15 +734,20 @@ class MainWindow(QMainWindow):
     def on_item_double_clicked(self, item):
         """Handle double-click - prepare for editing"""
         if item.column() == 2:  # Action (Override) column
-            # Store the original text and item
-            self._editing_item = item
-            self._editing_original_text = item.text()
+            # Get the binding data to store the default label for comparison
+            binding_data = item.data(Qt.ItemDataRole.UserRole)
+            if binding_data:
+                action_map_name, binding = binding_data
+                # Store the DEFAULT label (without custom override) for comparison
+                # Temporarily clear custom_label to get the default
+                original_custom = binding.custom_label
+                binding.custom_label = None
+                self._editing_default_text = LabelGenerator.get_action_label(binding.action_name, binding)
+                binding.custom_label = original_custom
 
-            # Clear the display text for clean editing experience
-            # Block signals to avoid triggering on_cell_edited
-            self.controls_table.blockSignals(True)
-            item.setText("")
-            self.controls_table.blockSignals(False)
+                logger.debug(f"on_item_double_clicked: default='{self._editing_default_text}', current='{item.text()}'")
+            else:
+                self._editing_default_text = None
 
     def on_cell_edited(self, item):
         """Handle cell editing (only column 2: Action Override is editable)"""
@@ -753,12 +757,12 @@ class MainWindow(QMainWindow):
         # Get the new text from the editor
         new_label = item.text().strip()
 
-        # Get stored original text
-        original_text = self._editing_original_text
+        # Get stored default text
+        default_text = self._editing_default_text
 
         # Clear editing state
         self._editing_item = None
-        self._editing_original_text = None
+        self._editing_default_text = None
 
         # Get the binding data stored in the item
         binding_data = item.data(Qt.ItemDataRole.UserRole)
@@ -768,9 +772,25 @@ class MainWindow(QMainWindow):
 
         action_map_name, binding = binding_data
 
-        # Check if user deleted everything or made no changes
-        # If so, remove the custom override (will fall back to auto-generated or global)
-        if not new_label:
+        # Debug logging
+        logger.debug(f"on_cell_edited: action={binding.action_name}, new_label='{new_label}', default='{default_text}'")
+
+        # Check if user deleted everything OR if the new text equals the default
+        # In both cases, remove the custom override
+        if not new_label or new_label == default_text:
+            # Clear the custom_label field to fall back to default
+            binding.custom_label = None
+
+            # Get the fallback label
+            fallback_label = LabelGenerator.get_action_label(binding.action_name, binding)
+            logger.debug(f"Label cleared or matches default, falling back to: '{fallback_label}'")
+
+            # Update the table to show the fallback label
+            self.controls_table.blockSignals(True)
+            item.setText(fallback_label)
+            self.controls_table.blockSignals(False)
+
+            # Remove from the override file
             try:
                 # Import with error handling for different execution contexts
                 try:
@@ -781,25 +801,20 @@ class MainWindow(QMainWindow):
                 override_manager = get_override_manager()
                 override_manager.remove_custom_override(binding.action_name)
 
-                # Clear the custom_label field to fall back to auto-generated/global
-                binding.custom_label = None
-
-                # Update the table to show the fallback label
-                fallback_label = LabelGenerator.get_action_label(binding.action_name, binding)
-                self.controls_table.blockSignals(True)
-                item.setText(fallback_label)
-                self.controls_table.blockSignals(False)
-
-                # Update graphics widget
-                self.graphics_widget.load_profile(self.current_profile)
-
-                self.statusBar().showMessage(f"Custom label removed for '{binding.action_name}' - using auto-generated label")
+                if not new_label:
+                    self.statusBar().showMessage(f"Custom label removed for '{binding.action_name}' - using default: '{fallback_label}'")
+                else:
+                    self.statusBar().showMessage(f"Label matches default for '{binding.action_name}' - no custom override needed")
+                logger.info(f"Removed custom override for '{binding.action_name}', using default: '{fallback_label}'")
             except Exception as e:
-                self.statusBar().showMessage(f"Error removing label override: {str(e)}")
-                print(f"Error removing label override: {e}")
+                self.statusBar().showMessage(f"Warning: Label restored but couldn't update override file: {str(e)}")
+                logger.error(f"Error removing label override: {e}", exc_info=True)
+
+            # Update graphics widget
+            self.graphics_widget.load_profile(self.current_profile)
             return
 
-        # Save to override manager
+        # New label is different from default - save as custom override
         try:
             # Import with error handling for different execution contexts
             try:
@@ -813,13 +828,19 @@ class MainWindow(QMainWindow):
             # Update binding's custom_label field
             binding.custom_label = new_label
 
+            # Update the table item to show the new custom label
+            self.controls_table.blockSignals(True)
+            item.setText(new_label)
+            self.controls_table.blockSignals(False)
+
             # Update graphics widget
             self.graphics_widget.load_profile(self.current_profile)
 
-            self.statusBar().showMessage(f"Label override saved: '{binding.action_name}' → '{new_label}'")
+            self.statusBar().showMessage(f"Custom label saved: '{binding.action_name}' → '{new_label}'")
+            logger.info(f"Saved custom override for '{binding.action_name}': '{new_label}'")
         except Exception as e:
             self.statusBar().showMessage(f"Error saving label override: {str(e)}")
-            print(f"Error saving label override: {e}")
+            logger.error(f"Error saving label override: {e}", exc_info=True)
 
     def export_csv(self):
         """Export profile to CSV"""
@@ -849,9 +870,9 @@ class MainWindow(QMainWindow):
                     writer.writerow(["Action Map", "Action (Original)", "Action (Override)", "Input Code", "Input Label", "Device"])
                     visible_cols = [0, 1, 2, 3, 4, 5]
                 else:
-                    # Write header for default view (3 columns)
-                    writer.writerow(["Action Map", "Action", "Device"])
-                    visible_cols = [0, 2, 5]  # Action Map, Action (Override), Device
+                    # Write header for default view (4 columns)
+                    writer.writerow(["Action Map", "Action", "Input Label", "Device"])
+                    visible_cols = [0, 2, 4, 5]  # Action Map, Action (Override), Input Label, Device
 
                 # Write visible rows only
                 for row in range(self.controls_table.rowCount()):
@@ -917,9 +938,9 @@ class MainWindow(QMainWindow):
                 col_widths = [1.3*inch, 1.5*inch, 1.5*inch, 1*inch, 1.5*inch, 1.2*inch]
             else:
                 # Default view header and columns
-                table_data = [["Action Map", "Action", "Device"]]
-                visible_cols = [0, 2, 5]
-                col_widths = [2.5*inch, 4*inch, 2.5*inch]
+                table_data = [["Action Map", "Action", "Input Label", "Device"]]
+                visible_cols = [0, 2, 4, 5]
+                col_widths = [2*inch, 3*inch, 2.5*inch, 1.5*inch]
 
             for row in range(self.controls_table.rowCount()):
                 if not self.controls_table.isRowHidden(row):
@@ -1011,8 +1032,8 @@ class MainWindow(QMainWindow):
                 headers = ["Action Map", "Action (Original)", "Action (Override)", "Input Code", "Input Label", "Device"]
                 visible_cols = [0, 1, 2, 3, 4, 5]
             else:
-                headers = ["Action Map", "Action", "Device"]
-                visible_cols = [0, 2, 5]
+                headers = ["Action Map", "Action", "Input Label", "Device"]
+                visible_cols = [0, 2, 4, 5]
 
             # Create table
             table = doc.add_table(rows=1, cols=len(headers))
