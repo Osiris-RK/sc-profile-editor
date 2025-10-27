@@ -5,14 +5,13 @@ Device graphics widget for displaying and annotating device images
 import sys
 import os
 import logging
+import re
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QPushButton, QGraphicsView, QGraphicsScene,
                               QGraphicsPixmapItem, QGraphicsTextItem, QGraphicsRectItem,
                               QFileDialog, QMessageBox)
 from PyQt6.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QBrush, QImage
 from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
-from PyQt6.QtSvgWidgets import QGraphicsSvgItem
-from PyQt6.QtSvg import QSvgRenderer
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -161,99 +160,20 @@ class DeviceGraphicsWidget(QWidget):
         # Clear scene
         self.scene.clear()
 
-        # Check if the image is SVG or raster format
-        is_svg = template.image_path.lower().endswith('.svg')
+        # Load and display device image
+        pixmap = QPixmap(template.image_path)
 
-        if is_svg:
-            # Check if this SVG contains template tags that need replacement
-            svg_has_overlay = (template.overlay_path and
-                             os.path.normpath(template.image_path) == os.path.normpath(template.overlay_path))
+        if pixmap.isNull():
+            self.status_label.setText(f"Failed to load image: {template.image_path}")
+            self.export_available_changed.emit(False)
+            return
 
-            if svg_has_overlay:
-                # Read SVG content and replace template tags before rendering
-                try:
-                    with open(template.image_path, 'r', encoding='utf-8') as f:
-                        svg_content = f.read()
+        # Add image to scene
+        pixmap_item = QGraphicsPixmapItem(pixmap)
+        self.scene.addItem(pixmap_item)
 
-                    # Get bindings and create replacement map
-                    device_bindings = self.get_device_bindings()
-                    bindings_map = {}
-
-                    from parser.label_generator import LabelGenerator
-                    for action_map_name, binding in device_bindings:
-                        input_code = binding.input_code.strip()
-                        if not input_code or input_code.endswith('_ ') or input_code.endswith('_'):
-                            continue
-
-                        input_label = LabelGenerator.generate_input_label(binding.input_code)
-                        if ': ' in input_label:
-                            input_label = input_label.split(': ', 1)[1]
-
-                        if not input_label or not input_label.strip():
-                            continue
-
-                        action_label = LabelGenerator.get_action_label(binding.action_name, binding)
-                        bindings_map[input_label] = action_label
-
-                    # Replace template tags
-                    import re
-                    def replace_tag(match):
-                        tag_content = match.group(1).strip()
-                        return bindings_map.get(tag_content, tag_content)
-
-                    processed_svg = re.sub(r'\{\{\s*([^}]+)\s*\}\}', replace_tag, svg_content)
-
-                    # Render the processed SVG
-                    from PyQt6.QtCore import QByteArray
-                    renderer = QSvgRenderer(QByteArray(processed_svg.encode('utf-8')))
-
-                except Exception as e:
-                    logger.error(f"Error processing SVG template: {e}", exc_info=True)
-                    # Fall back to rendering without replacement
-                    renderer = QSvgRenderer(template.image_path)
-            else:
-                # No template tags, render as-is
-                renderer = QSvgRenderer(template.image_path)
-
-            if not renderer.isValid():
-                self.status_label.setText(f"Failed to load SVG: {template.image_path}")
-                self.export_available_changed.emit(False)
-                return
-
-            # Get the SVG's default size
-            svg_size = renderer.defaultSize()
-
-            # Create a QImage and render the SVG onto it
-            image = QImage(svg_size, QImage.Format.Format_ARGB32)
-            image.fill(Qt.GlobalColor.transparent)
-
-            painter = QPainter(image)
-            renderer.render(painter)
-            painter.end()
-
-            # Convert to pixmap and add to scene
-            pixmap = QPixmap.fromImage(image)
-            pixmap_item = QGraphicsPixmapItem(pixmap)
-            self.scene.addItem(pixmap_item)
-
-            # Add annotations if SVG doesn't have embedded overlay
-            if not svg_has_overlay:
-                self.add_annotations()
-        else:
-            # Load raster image (PNG, JPG, etc.)
-            pixmap = QPixmap(template.image_path)
-
-            if pixmap.isNull():
-                self.status_label.setText(f"Failed to load image: {template.image_path}")
-                self.export_available_changed.emit(False)
-                return
-
-            # Add image to scene
-            pixmap_item = QGraphicsPixmapItem(pixmap)
-            self.scene.addItem(pixmap_item)
-
-            # Add annotations for raster images
-            self.add_annotations()
+        # Add annotations
+        self.add_annotations()
 
         # Fit view to scene
         self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -318,11 +238,24 @@ class DeviceGraphicsWidget(QWidget):
             # Get action label (with override support)
             action_label = LabelGenerator.get_action_label(binding.action_name, binding)
 
-            # Store mapping
+            # Store mapping - use the original label as the primary key
             bindings_map[input_label] = action_label
 
+            # For hat buttons, also store under template-friendly formats
+            # Templates may use different formats:
+            # - "Hat up", "Hat down" (no number, lowercase) - used by right stick
+            # - "Hat1 up", "Hat1 down" (no space, lowercase) - used by left stick
+            # So we store the action under ALL possible formats the templates might use
+            hat_match = re.match(r'Hat\s+(\d+)\s+(\w+)', input_label)
+            if hat_match:
+                hat_num = hat_match.group(1)
+                direction = hat_match.group(2).lower()
+                # Format 1: "Hat up" (no number, lowercase direction)
+                bindings_map[f"Hat {direction}"] = action_label
+                # Format 2: "Hat1 up" (no space between Hat and number, lowercase direction)
+                bindings_map[f"Hat{hat_num} {direction}"] = action_label
+
         # Replace template tags in SVG with actual bindings
-        import re
         def replace_tag(match):
             tag_content = match.group(1).strip()
             # Look up the binding for this input
