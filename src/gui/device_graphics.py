@@ -217,8 +217,10 @@ class DeviceGraphicsWidget(QWidget):
         # Get all bindings for this device
         device_bindings = self.get_device_bindings()
 
-        # Create mapping from input labels to action labels
-        bindings_map = {}
+        # First, group bindings by input_code to handle multiple actions per button
+        from collections import defaultdict
+        grouped_bindings = defaultdict(list)
+
         for action_map_name, binding in device_bindings:
             # Skip empty or whitespace-only input codes (cleared bindings)
             input_code = binding.input_code.strip()
@@ -235,11 +237,22 @@ class DeviceGraphicsWidget(QWidget):
             if not input_label or not input_label.strip():
                 continue
 
-            # Get action label (with override support)
-            action_label = LabelGenerator.get_action_label(binding.action_name, binding)
+            grouped_bindings[input_label].append((action_map_name, binding))
+
+        # Create mapping from input labels to action labels
+        bindings_map = {}
+        for input_label, bindings in grouped_bindings.items():
+            # Get action labels for all bindings on this input
+            action_labels = []
+            for action_map_name, binding in bindings:
+                action_label = LabelGenerator.get_action_label(binding.action_name, binding)
+                action_labels.append(action_label)
+
+            # Join multiple actions with slash separator (single line)
+            combined_label = ' / '.join(action_labels)
 
             # Store mapping - use the original label as the primary key
-            bindings_map[input_label] = action_label
+            bindings_map[input_label] = combined_label
 
             # For hat buttons, also store under template-friendly formats
             # Templates may use different formats:
@@ -251,9 +264,9 @@ class DeviceGraphicsWidget(QWidget):
                 hat_num = hat_match.group(1)
                 direction = hat_match.group(2).lower()
                 # Format 1: "Hat up" (no number, lowercase direction)
-                bindings_map[f"Hat {direction}"] = action_label
+                bindings_map[f"Hat {direction}"] = combined_label
                 # Format 2: "Hat1 up" (no space between Hat and number, lowercase direction)
-                bindings_map[f"Hat{hat_num} {direction}"] = action_label
+                bindings_map[f"Hat{hat_num} {direction}"] = combined_label
 
         # Replace template tags in SVG with actual bindings
         def replace_tag(match):
@@ -390,9 +403,9 @@ class DeviceGraphicsWidget(QWidget):
 
                     wrapped_text = text_content
 
-                # Create Qt text item with HTML for line breaks
+                # Create Qt text item
                 text_item = QGraphicsTextItem()
-                text_item.setHtml(wrapped_text)
+                text_item.setPlainText(wrapped_text)
 
                 # Set font
                 font = QFont(font_family, font_size)
