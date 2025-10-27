@@ -5,6 +5,7 @@ Device graphics widget for displaying and annotating device images
 import sys
 import os
 import logging
+import re
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QPushButton, QGraphicsView, QGraphicsScene,
                               QGraphicsPixmapItem, QGraphicsTextItem, QGraphicsRectItem,
@@ -18,6 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from graphics.template_manager import TemplateManager, DeviceTemplate
 from models.profile_model import ControlProfile, Device, ActionBinding
 from parser.label_generator import LabelGenerator
+from utils.device_splitter import is_vkb_with_sem, get_base_stick_name
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class DeviceGraphicsWidget(QWidget):
         self.current_profile: ControlProfile = None
         self.current_device: Device = None
         self.current_template: DeviceTemplate = None
+        self.current_device_name: str = None  # Actual device name to display (may differ from current_device.product_name for split devices)
 
         self.setup_ui()
 
@@ -78,12 +81,36 @@ class DeviceGraphicsWidget(QWidget):
         for device in profile.devices:
             if device.device_type == 'joystick':  # Focus on joysticks for now
                 device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
-                template = self.template_manager.find_template(device.product_name or "")
 
-                if template:
-                    self.device_combo.addItem(f"{device_name} (Template available)", device)
+                # Check if this is a VKB device with SEM module
+                if is_vkb_with_sem(device_name):
+                    # Add two entries: base stick and SEM module
+                    base_stick_name = get_base_stick_name(device_name)
+
+                    # Check if templates exist for both
+                    base_template = self.template_manager.find_template(base_stick_name)
+                    sem_template = self.template_manager.find_template("VKB SEM")
+
+                    if base_template:
+                        # Store device and base stick name in item data as tuple
+                        self.device_combo.addItem(f"{base_stick_name} (Template available)", (device, base_stick_name))
+                    else:
+                        self.device_combo.addItem(f"{base_stick_name} (No template)", (device, base_stick_name))
+
+                    if sem_template:
+                        # Store device and "VKB SEM" name in item data as tuple
+                        self.device_combo.addItem(f"VKB SEM (Template available)", (device, "VKB SEM"))
+                    else:
+                        self.device_combo.addItem(f"VKB SEM (No template)", (device, "VKB SEM"))
                 else:
-                    self.device_combo.addItem(f"{device_name} (No template)", device)
+                    # Regular device (not split)
+                    template = self.template_manager.find_template(device.product_name or "")
+
+                    if template:
+                        # Store device and device name as tuple for consistency
+                        self.device_combo.addItem(f"{device_name} (Template available)", (device, device_name))
+                    else:
+                        self.device_combo.addItem(f"{device_name} (No template)", (device, device_name))
 
         if self.device_combo.count() == 0:
             self.status_label.setText("No devices with templates found")
@@ -96,23 +123,24 @@ class DeviceGraphicsWidget(QWidget):
         if index < 0:
             return
 
-        device = self.device_combo.itemData(index)
-        if not device:
+        item_data = self.device_combo.itemData(index)
+        if not item_data:
             self.scene.clear()
             self.status_label.setText("No device selected")
             self.export_available_changed.emit(False)
             return
 
-        self.current_device = device
+        # Item data is a tuple: (device, device_name)
+        self.current_device, self.current_device_name = item_data
         self.load_device_graphic()
 
     def load_device_graphic(self):
         """Load and display device graphic with annotations"""
-        if not self.current_device:
+        if not self.current_device or not self.current_device_name:
             return
 
-        # Find template for this device
-        template = self.template_manager.find_template(self.current_device.product_name or "")
+        # Find template for this device (use current_device_name for split devices)
+        template = self.template_manager.find_template(self.current_device_name)
 
         if not template:
             self.scene.clear()
@@ -210,11 +238,24 @@ class DeviceGraphicsWidget(QWidget):
             # Get action label (with override support)
             action_label = LabelGenerator.get_action_label(binding.action_name, binding)
 
-            # Store mapping
+            # Store mapping - use the original label as the primary key
             bindings_map[input_label] = action_label
 
+            # For hat buttons, also store under template-friendly formats
+            # Templates may use different formats:
+            # - "Hat up", "Hat down" (no number, lowercase) - used by right stick
+            # - "Hat1 up", "Hat1 down" (no space, lowercase) - used by left stick
+            # So we store the action under ALL possible formats the templates might use
+            hat_match = re.match(r'Hat\s+(\d+)\s+(\w+)', input_label)
+            if hat_match:
+                hat_num = hat_match.group(1)
+                direction = hat_match.group(2).lower()
+                # Format 1: "Hat up" (no number, lowercase direction)
+                bindings_map[f"Hat {direction}"] = action_label
+                # Format 2: "Hat1 up" (no space between Hat and number, lowercase direction)
+                bindings_map[f"Hat{hat_num} {direction}"] = action_label
+
         # Replace template tags in SVG with actual bindings
-        import re
         def replace_tag(match):
             tag_content = match.group(1).strip()
             # Look up the binding for this input
@@ -507,18 +548,36 @@ class DeviceGraphicsWidget(QWidget):
 
     def get_device_bindings(self) -> list:
         """Get all bindings for the current device"""
-        if not self.current_device or not self.current_profile:
+        if not self.current_device or not self.current_profile or not self.current_device_name:
             return []
 
         bindings = []
         device_instance = self.current_device.instance
         device_type = self.current_device.device_type
 
+        # Get button range for this template (if it has one)
+        template = self.template_manager.find_template(self.current_device_name)
+        button_range = template.button_range if template and template.button_range else None
+
         for action_map in self.current_profile.action_maps:
             for binding in action_map.actions:
-                # Check if this binding is for this device
+                # Check if this binding is for this device instance
                 if device_type == 'joystick' and binding.input_code.startswith(f'js{device_instance}_'):
-                    bindings.append((action_map.name, binding))
+                    # If we have a button range, filter by it
+                    if button_range:
+                        from utils.device_splitter import extract_button_number
+                        button_num = extract_button_number(binding.input_code)
+
+                        # Only include if button is in range
+                        if button_num is not None:
+                            if button_range[0] <= button_num <= button_range[1]:
+                                bindings.append((action_map.name, binding))
+                        # For non-button inputs (axes, hats), only include for base device (lower button range)
+                        elif button_range[0] == 1:
+                            bindings.append((action_map.name, binding))
+                    else:
+                        # No button range filtering - include all bindings for this device
+                        bindings.append((action_map.name, binding))
 
         return bindings
 

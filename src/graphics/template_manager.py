@@ -21,6 +21,7 @@ class DeviceTemplate:
     device_type: str
     button_coordinates: Dict[str, Dict[str, int]]
     overlay_path: Optional[str] = None
+    button_range: Optional[List[int]] = None  # [min_button, max_button] for device splitting
 
 
 class TemplateManager:
@@ -61,7 +62,8 @@ class TemplateManager:
                     device_match_patterns=template_data['device_match_patterns'],
                     device_type=template_data['type'],
                     button_coordinates=template_data.get('buttons', {}),
-                    overlay_path=overlay_path
+                    overlay_path=overlay_path,
+                    button_range=template_data.get('button_range')
                 )
                 self.templates.append(template)
 

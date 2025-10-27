@@ -4,20 +4,46 @@
       "id": "vkb_gladiator_evo_right",
       "name": "VKB Gladiator EVO (Right)",
       "image": "vkb_gladiator_evo_right/vkb_gladiator_evo_right.png",
-      "template_image": "vkb_gladiator_evo_right/vkb_gladiator_evo_right_template.png",
       "overlay": "vkb_gladiator_evo_right/vkb_gladiator_evo_right_overlay.svg",
       "device_match_patterns": [
         "VKBsim Gladiator EVO R",
         "Gladiator EVO R"
       ],
       "type": "joystick",
-      "buttons": {}
+      "buttons": {},
+      "button_range": [1, 40]
+    },
+    {
+      "id": "vkb_gladiator_evo_left",
+      "name": "VKB Gladiator EVO (Left)",
+      "image": "vkb_gladiator_evo_left/vkb_gladiator_evo_left.png",
+      "overlay": "vkb_gladiator_evo_left/vkb_gladiator_evo_left_overlay.svg",
+      "device_match_patterns": [
+        "VKBsim Gladiator EVO L",
+        "Gladiator EVO L"
+      ],
+      "type": "joystick",
+      "buttons": {},
+      "button_range": [1, 40]
+    },
+    {
+      "id": "vkb_sem",
+      "name": "VKB SEM",
+      "image": "vkb_sem/vkb_sem.png",
+      "template_image": "vkb_sem/vkb_sem.png",
+      "overlay": "vkb_sem/vkb_sem.svg",
+      "device_match_patterns": [
+        "VKB SEM",
+        "SEM"
+      ],
+      "type": "joystick",
+      "buttons": {},
+      "button_range": [41, 64]
     },
     {
       "id": "vpc_mt50cm3_right",
       "name": "VPC MT-50CM3 (Right)",
       "image": "vpc_mt50cm3_right/vpc_mt50cm3_right.png",
-      "template_image": "vpc_mt50cm3_right/vpc_mt50cm3_right_template.png",
       "overlay": "vpc_mt50cm3_right/vpc_mt50cm3_right_template_overlay.svg",
       "device_match_patterns": [
         "RIGHT VPC Stick MT-50CM3",
