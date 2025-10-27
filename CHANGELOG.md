@@ -7,15 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Device template directories for expanded HOTAS support:
-  - VKB Gladiator EVO Left (with Space Sim Module)
-  - Thrustmaster TWCS Throttle
-  - Virpil MongoosT-50CM3 Left and Right sticks
-- DEVICE_STATUS.md to track template development progress
+## [0.2.0] - 2025-10-26
 
-### In Progress
-- Creating device templates for v0.2.0 release
+### Added
+- **Expanded device template support** - Added templates for additional HOTAS devices:
+  - VKB Gladiator EVO Left (standalone and with Space Sim Module)
+  - VKB Space Sim Module (SEM) as separate device
+  - Virpil MongoosT-50CM3 Left stick
+  - Thrustmaster TWCS Throttle
+- Device splitter utility (`device_splitter.py`) for handling composite devices like VKB sticks with SEM modules
+- Comprehensive device template creation documentation:
+  - `CREATING_DEVICE_TEMPLATES.md` - Step-by-step guide for creating new device templates
+  - `OVERLAY_CONVERSION.md` - Guide for converting Inkscape SVG overlays
+- Utility scripts for template development:
+  - `convert_inkscape_overlay.py` - Convert Inkscape SVG to template format
+  - `embed_image_in_svg.py` - Embed device images in SVG overlays
+  - `rescale_overlay.py` - Rescale overlay coordinates
+- DEVICE_STATUS.md to track template development progress across devices
+
+### Changed
+- Updated .gitignore to exclude scratch/working directories and binary artifacts
 
 ## [0.1.1] - 2025-10-24
 
