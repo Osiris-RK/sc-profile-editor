@@ -59,8 +59,10 @@ class SelectAllDelegate(QStyledItemDelegate):
             # Get current text
             text = index.model().data(index, Qt.ItemDataRole.DisplayRole)
             editor.setText(text or "")
-            # Select all text so typing replaces it
-            editor.selectAll()
+            # Ensure editor has focus before selecting
+            editor.setFocus()
+            # Use a small delay to ensure editor is ready
+            QTimer.singleShot(0, editor.selectAll)
         else:
             super().setEditorData(editor, index)
 
@@ -738,12 +740,21 @@ class MainWindow(QMainWindow):
             binding_data = item.data(Qt.ItemDataRole.UserRole)
             if binding_data:
                 action_map_name, binding = binding_data
-                # Store the DEFAULT label (without custom override) for comparison
-                # Temporarily clear custom_label to get the default
-                original_custom = binding.custom_label
-                binding.custom_label = None
-                self._editing_default_text = LabelGenerator.get_action_label(binding.action_name, binding)
-                binding.custom_label = original_custom
+                # Store the DEFAULT label (without ANY custom override - not from file, not from binding)
+                # We need to get the true default: global override or auto-generated
+                # To do this, we use use_override=False to skip the override manager
+                self._editing_default_text = LabelGenerator.generate_action_label(binding.action_name)
+
+                # Check if there's a global override (not custom)
+                try:
+                    from utils.label_overrides import get_override_manager
+                except ImportError:
+                    from ..utils.label_overrides import get_override_manager
+
+                override_manager = get_override_manager()
+                global_overrides = override_manager.load_global_overrides()
+                if binding.action_name in global_overrides:
+                    self._editing_default_text = global_overrides[binding.action_name]
 
                 logger.debug(f"on_item_double_clicked: default='{self._editing_default_text}', current='{item.text()}'")
             else:
@@ -812,6 +823,11 @@ class MainWindow(QMainWindow):
 
             # Update graphics widget
             self.graphics_widget.load_profile(self.current_profile)
+
+            # Force reload override manager cache and repopulate the table
+            override_manager.reload()
+            self.populate_controls_table()
+            self.apply_filters()
             return
 
         # New label is different from default - save as custom override
@@ -838,6 +854,11 @@ class MainWindow(QMainWindow):
 
             self.statusBar().showMessage(f"Custom label saved: '{binding.action_name}' → '{new_label}'")
             logger.info(f"Saved custom override for '{binding.action_name}': '{new_label}'")
+
+            # Force reload override manager cache and repopulate the table
+            override_manager.reload()
+            self.populate_controls_table()
+            self.apply_filters()
         except Exception as e:
             self.statusBar().showMessage(f"Error saving label override: {str(e)}")
             logger.error(f"Error saving label override: {e}", exc_info=True)
