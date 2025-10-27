@@ -256,6 +256,9 @@ class MainWindow(QMainWindow):
         self.graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
         self.tab_widget.addTab(self.graphics_widget, "Device Graphics")
 
+        # Connect tab change signal to sync device selection
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
+
         # Footer with PayPal donation and Discord link
         footer_layout = QHBoxLayout()
         footer_layout.addStretch()
@@ -609,12 +612,23 @@ class MainWindow(QMainWindow):
             action_map_label = LabelGenerator.generate_actionmap_label(action_map_name)
             action_maps.add(action_map_label)
 
+        # Save current selections before clearing
+        current_device = self.device_filter.currentText()
+        current_actionmap = self.actionmap_filter.currentText()
+
         # Update device filter
         self.device_filter.blockSignals(True)
         self.device_filter.clear()
         self.device_filter.addItem("All Devices")
         for device in sorted(devices):
             self.device_filter.addItem(device)
+
+        # Restore previous selection if it still exists
+        if current_device:
+            index = self.device_filter.findText(current_device)
+            if index >= 0:
+                self.device_filter.setCurrentIndex(index)
+
         self.device_filter.blockSignals(False)
 
         # Update action map filter
@@ -623,6 +637,13 @@ class MainWindow(QMainWindow):
         self.actionmap_filter.addItem("All Action Maps")
         for action_map in sorted(action_maps):
             self.actionmap_filter.addItem(action_map)
+
+        # Restore previous selection if it still exists
+        if current_actionmap:
+            index = self.actionmap_filter.findText(current_actionmap)
+            if index >= 0:
+                self.actionmap_filter.setCurrentIndex(index)
+
         self.actionmap_filter.blockSignals(False)
 
     def apply_filters(self):
@@ -732,6 +753,17 @@ class MainWindow(QMainWindow):
         self.actionmap_filter.setCurrentIndex(0)
         self.hide_unmapped_checkbox.setChecked(False)
         self.statusBar().showMessage(f"Filters cleared - showing all {self.controls_table.rowCount()} bindings")
+
+    def on_tab_changed(self, index: int):
+        """Handle tab change - sync device selection when switching to graphics tab"""
+        # Check if switched to Device Graphics tab (index 1)
+        if index == 1:
+            # Get the currently filtered device from the control table
+            filtered_device = self.device_filter.currentText()
+
+            # If a specific device is selected (not "All Devices"), try to select it in graphics
+            if filtered_device and filtered_device != "All Devices":
+                self.graphics_widget.select_device_by_name(filtered_device)
 
     def on_item_double_clicked(self, item):
         """Handle double-click - prepare for editing"""

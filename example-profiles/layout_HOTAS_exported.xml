@@ -21,6 +21,9 @@
  <deviceoptions name=" VKBsim Gladiator EVO R    {0200231D-0000-0000-0000-504944564944}">
   <option input="x" deadzone="0.049499996"/>
   <option input="y" deadzone="0.049499996"/>
+  <option input="rotx" deadzone="0.2475"/>
+  <option input="roty" deadzone="0.2475"/>
+  <option input="rotz" deadzone="0.2475"/>
  </deviceoptions>
  <deviceoptions name="Mouse">
   <option input="@pause_OptionsMouseSmoothing" saturation="0.0089999996"/>
@@ -40,9 +43,43 @@
   <turret_aim_pitch exponent="1.1"/>
   <turret_aim_yaw exponent="1.1"/>
  </options>
- <options type="joystick" instance="1" Product=" VKBsim Gladiator EVO R    {0200231D-0000-0000-0000-504944564944}"/>
+ <options type="joystick" instance="1" Product=" VKBsim Gladiator EVO R    {0200231D-0000-0000-0000-504944564944}">
+  <flight_move_strafe_vertical>
+   <nonlinearity_curve>
+    <point in="0" out="0"/>
+    <point in="0.20035715" out="0.30950743"/>
+    <point in="0.82027185" out="0.68468004"/>
+    <point in="1" out="1"/>
+   </nonlinearity_curve>
+  </flight_move_strafe_vertical>
+  <flight_move_strafe_lateral>
+   <nonlinearity_curve>
+    <point in="0" out="0"/>
+    <point in="0.20035715" out="0.30950743"/>
+    <point in="0.82027185" out="0.68468004"/>
+    <point in="1" out="1"/>
+   </nonlinearity_curve>
+  </flight_move_strafe_lateral>
+  <flight_strafe_longitudinal invert="1"/>
+  <flight_strafe_forward invert="1"/>
+ </options>
  <options type="joystick" instance="2" Product="TWCS Throttle  {B687044F-0000-0000-0000-504944564944}">
-  <flight_move_strafe_vertical invert="1"/>
+  <flight_move_strafe_vertical invert="1">
+   <nonlinearity_curve>
+    <point in="0" out="0"/>
+    <point in="0.20035715" out="0.30950743"/>
+    <point in="0.82027185" out="0.68468004"/>
+    <point in="1" out="1"/>
+   </nonlinearity_curve>
+  </flight_move_strafe_vertical>
+  <flight_move_strafe_lateral>
+   <nonlinearity_curve>
+    <point in="0" out="0"/>
+    <point in="0.20035715" out="0.30950743"/>
+    <point in="0.82027185" out="0.68468004"/>
+    <point in="1" out="1"/>
+   </nonlinearity_curve>
+  </flight_move_strafe_lateral>
   <flight_strafe_longitudinal invert="1"/>
   <flight_strafe_forward invert="1"/>
  </options>
@@ -145,10 +182,10 @@
  </actionmap>
  <actionmap name="spaceship_targeting">
   <action name="v_target_lock_selected">
-   <rebind input="js1_button4"/>
+   <rebind input="js1_button5"/>
   </action>
   <action name="v_target_unlock">
-   <rebind input="js1_button5"/>
+   <rebind input="js1_button4"/>
   </action>
  </actionmap>
  <actionmap name="spaceship_radar">
@@ -190,17 +227,17 @@
  </actionmap>
  <actionmap name="spaceship_missiles">
   <action name="v_weapon_cycle_missile_back">
-   <rebind input="js1_button14"/>
+   <rebind input="js1_button19"/>
   </action>
   <action name="v_weapon_cycle_missile_fwd">
    <rebind input="kb1_np_0"/>
-   <rebind input="js1_button12"/>
+   <rebind input="js1_button17"/>
   </action>
   <action name="v_weapon_decrease_max_missiles">
-   <rebind input="js1_button13"/>
+   <rebind input="js1_button18"/>
   </action>
   <action name="v_weapon_increase_max_missiles">
-   <rebind input="js1_button11"/>
+   <rebind input="js1_button16"/>
   </action>
  </actionmap>
  <actionmap name="spaceship_defensive">
@@ -212,8 +249,14 @@
   </action>
  </actionmap>
  <actionmap name="spaceship_power">
+  <action name="v_power_toggle">
+   <rebind input="js1_button28"/>
+  </action>
   <action name="v_power_toggle_shields">
    <rebind input="kb1_ "/>
+  </action>
+  <action name="v_power_toggle_thrusters">
+   <rebind input="js1_button29"/>
   </action>
   <action name="v_power_toggle_weapons">
    <rebind input="kb1_ "/>

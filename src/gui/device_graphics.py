@@ -24,6 +24,20 @@ from utils.device_splitter import is_vkb_with_sem, get_base_stick_name
 logger = logging.getLogger(__name__)
 
 
+class ResizableGraphicsView(QGraphicsView):
+    """Custom QGraphicsView that re-fits content on resize"""
+
+    def __init__(self, scene):
+        super().__init__(scene)
+        self._fit_on_resize = True
+
+    def resizeEvent(self, event):
+        """Re-fit the view when resized"""
+        super().resizeEvent(event)
+        if self._fit_on_resize and self.scene() and not self.scene().sceneRect().isEmpty():
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+
+
 class DeviceGraphicsWidget(QWidget):
     """Widget for displaying device with control annotations"""
 
@@ -58,7 +72,7 @@ class DeviceGraphicsWidget(QWidget):
 
         # Graphics view
         self.scene = QGraphicsScene()
-        self.view = QGraphicsView(self.scene)
+        self.view = ResizableGraphicsView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
@@ -117,6 +131,32 @@ class DeviceGraphicsWidget(QWidget):
             self.device_combo.addItem("No devices available", None)
         else:
             self.status_label.setText(f"Found {self.device_combo.count()} device(s)")
+
+    def select_device_by_name(self, device_name: str) -> bool:
+        """
+        Select a device in the combo box by its display name.
+        Returns True if device was found and selected, False otherwise.
+        """
+        if not device_name:
+            return False
+
+        # Search through combo box items
+        for i in range(self.device_combo.count()):
+            item_text = self.device_combo.itemText(i)
+            item_data = self.device_combo.itemData(i)
+
+            # Check if this matches the device name
+            # Compare against the actual device name stored in item_data
+            if item_data:
+                stored_device, stored_name = item_data
+                # Match against the product name or the stored device name
+                if (stored_device.product_name == device_name or
+                    stored_name == device_name or
+                    item_text.startswith(device_name)):
+                    self.device_combo.setCurrentIndex(i)
+                    return True
+
+        return False
 
     def on_device_changed(self, index: int):
         """Handle device selection change"""
@@ -248,8 +288,11 @@ class DeviceGraphicsWidget(QWidget):
                 action_label = LabelGenerator.get_action_label(binding.action_name, binding)
                 action_labels.append(action_label)
 
+            # Remove duplicates while preserving order (e.g., when multiple actions have same custom label)
+            unique_labels = list(dict.fromkeys(action_labels))
+
             # Join multiple actions with slash separator (single line)
-            combined_label = ' / '.join(action_labels)
+            combined_label = ' / '.join(unique_labels)
 
             # Store mapping - use the original label as the primary key
             bindings_map[input_label] = combined_label
