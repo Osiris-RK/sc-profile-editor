@@ -117,6 +117,28 @@ This creates: `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
 
 4. **Publish Release**
 
+### 11. Post Release to Discord (Optional)
+
+**Prerequisites:**
+- Set up Discord webhook URL in `.env` file (copy from `.env.example`)
+- Create webhook: Discord Server → Server Settings → Integrations → Webhooks → New Webhook
+
+**Post the release:**
+```bash
+.venv\Scripts\python.exe scripts/discord_notify.py vX.Y.Z https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/vX.Y.Z
+```
+
+Example:
+```bash
+.venv\Scripts\python.exe scripts/discord_notify.py v0.2.1 https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/v0.2.1
+```
+
+The script will:
+- Parse CHANGELOG.md for the version's changes
+- Create a formatted Discord embed with release info
+- Post to the configured Discord channel
+- Skip gracefully if webhook URL is not configured
+
 ## GitHub Release Notes Template
 
 ```markdown
@@ -173,7 +195,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 - [ ] Verify GitHub release is published
 - [ ] Test installer download and installation
-- [ ] Announce release (Discord, social media, etc.)
+- [ ] Announce release (see step 11 for Discord webhook, or post manually to social media)
 - [ ] Create new development branch for next version (if needed)
 - [ ] Update CHANGELOG.md with new `[Unreleased]` section
 

@@ -50,3 +50,6 @@ htmlcov/
 
 # Custom label overrides (user-specific)
 label_overrides_custom.json
+
+# Environment Variables (contains sensitive data like webhook URLs)
+.env

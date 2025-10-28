@@ -16,6 +16,7 @@ Pillow>=10.1.0              # Image manipulation and graphics
 
 # Build Tools
 pyinstaller>=6.3.0          # For building standalone executable
+python-dotenv>=1.0.0        # Environment variable management for scripts
 
 # Note: The standard build (build_exe.py) excludes OCR dependencies
 # Use build_exe_with_ocr.py only if you need to create new device templates
