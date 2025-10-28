@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-10-28
+
+### Fixed
+- Fixed label edit loss when toggling "Show Detailed" checkbox during active edit
+  - Edits are now properly committed before view mode changes
+  - Prevents confusion when reverting to default labels
+- Fixed issue with device and action map filters not being preserved when toggling "Show Detailed" checkbox
+- Fixed issue with label editing window text bleed-through
+- Fixed issue restoring default text in label
+- Support for buttons with multiple mappings
+
+### Changed
+- Updated CHANGELOG documentation to clarify device template support status (VPC MongoosT-50CM3 Left and Thrustmaster TWCS Throttle are stubs)
+
 ## [0.2.0] - 2025-10-26
 
 ### Added
 - **Expanded device template support** - Added templates for additional HOTAS devices:
   - VKB Gladiator EVO Left (standalone and with Space Sim Module)
   - VKB Space Sim Module (SEM) as separate device
-  - Virpil MongoosT-50CM3 Left stick
-  - Thrustmaster TWCS Throttle
+  - Virpil MongoosT-50CM3 Left stick stubs
+  - Thrustmaster TWCS Throttle stubs
 - Device splitter utility (`device_splitter.py`) for handling composite devices like VKB sticks with SEM modules
 - Comprehensive device template creation documentation:
   - `CREATING_DEVICE_TEMPLATES.md` - Step-by-step guide for creating new device templates
