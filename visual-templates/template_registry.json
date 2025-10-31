@@ -53,6 +53,20 @@
       ],
       "type": "joystick",
       "buttons": {}
+    },
+    {
+      "id": "thrustmaster_twcs_throttle",
+      "name": "Thrustmaster TWCS Throttle",
+      "image": "thrustmaster_twcs_throttle/thrustmaster_twcs_throttle.png",
+      "overlay": "thrustmaster_twcs_throttle/thrustmaster_twcs_throttle.svg",
+      "device_match_patterns": [
+        "Thrustmaster TWCS Throttle",
+        "TWCS Throttle",
+        "T.16000M Throttle",
+        "Thrustmaster Throttle"
+      ],
+      "type": "throttle",
+      "buttons": {}
     }
   ]
 }
