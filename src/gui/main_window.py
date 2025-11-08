@@ -35,6 +35,7 @@ from parser.label_generator import LabelGenerator
 from models.profile_model import ControlProfile
 from gui.device_graphics import DeviceGraphicsWidget
 from gui.pdf_device_graphics_widget import PDFDeviceGraphicsWidget
+from gui.webengine_pdf_widget import WebEnginePDFWidget
 from utils.settings import AppSettings
 from utils.version import get_version
 from utils.device_splitter import get_device_for_input
@@ -257,10 +258,15 @@ class MainWindow(QMainWindow):
         self.graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
         self.tab_widget.addTab(self.graphics_widget, "Device Graphics (SVG)")
 
-        # Tab 3: PDF Device Graphics View (NEW - PDF-based templates)
+        # Tab 3: PDF Device Graphics View (PDF-based with dialog editing)
         self.pdf_graphics_widget = PDFDeviceGraphicsWidget(templates_dir)
         self.pdf_graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
         self.tab_widget.addTab(self.pdf_graphics_widget, "Device Graphics (PDF)")
+
+        # Tab 4: WebEngine PDF View (Interactive browser-like editing)
+        self.webengine_pdf_widget = WebEnginePDFWidget(templates_dir)
+        self.webengine_pdf_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
+        self.tab_widget.addTab(self.webengine_pdf_widget, "Device Graphics (Interactive)")
 
         # Connect tab change signal to sync device selection
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
@@ -482,6 +488,7 @@ class MainWindow(QMainWindow):
         # Load profile into graphics widgets
         self.graphics_widget.load_profile(profile)
         self.pdf_graphics_widget.load_profile(profile)
+        self.webengine_pdf_widget.load_profile(profile)
 
     def populate_controls_table(self):
         """Populate the controls table with bindings"""
@@ -763,20 +770,21 @@ class MainWindow(QMainWindow):
 
     def on_tab_changed(self, index: int):
         """Handle tab change - sync device selection when switching to graphics tabs"""
-        # Check if switched to Device Graphics tab (SVG - index 1) or PDF Graphics tab (index 2)
-        if index == 1:
-            # Get the currently filtered device from the control table
-            filtered_device = self.device_filter.currentText()
+        # Get the currently filtered device from the control table
+        filtered_device = self.device_filter.currentText()
 
-            # If a specific device is selected (not "All Devices"), try to select it in graphics
+        if index == 1:
+            # SVG Graphics tab
             if filtered_device and filtered_device != "All Devices":
                 self.graphics_widget.select_device_by_name(filtered_device)
         elif index == 2:
-            # PDF Graphics tab
-            filtered_device = self.device_filter.currentText()
-
+            # PDF Graphics tab (dialog-based)
             if filtered_device and filtered_device != "All Devices":
                 self.pdf_graphics_widget.select_device_by_name(filtered_device)
+        elif index == 3:
+            # WebEngine PDF Graphics tab (interactive)
+            if filtered_device and filtered_device != "All Devices":
+                self.webengine_pdf_widget.select_device_by_name(filtered_device)
 
     def on_item_double_clicked(self, item):
         """Handle double-click - prepare for editing"""
@@ -869,6 +877,7 @@ class MainWindow(QMainWindow):
             # Update graphics widgets
             self.graphics_widget.load_profile(self.current_profile)
             self.pdf_graphics_widget.load_profile(self.current_profile)
+            self.webengine_pdf_widget.load_profile(self.current_profile)
 
             # Force reload override manager cache and repopulate the table
             override_manager.reload()
@@ -898,6 +907,7 @@ class MainWindow(QMainWindow):
             # Update graphics widgets
             self.graphics_widget.load_profile(self.current_profile)
             self.pdf_graphics_widget.load_profile(self.current_profile)
+            self.webengine_pdf_widget.load_profile(self.current_profile)
 
             self.statusBar().showMessage(f"Custom label saved: '{binding.action_name}' → '{new_label}'")
             logger.info(f"Saved custom override for '{binding.action_name}': '{new_label}'")
@@ -1142,10 +1152,13 @@ class MainWindow(QMainWindow):
             # SVG graphics tab
             self.graphics_widget.export_graphic()
         elif current_tab == 2:
-            # PDF graphics tab
+            # PDF graphics tab (dialog-based)
             self.pdf_graphics_widget.export_graphic()
+        elif current_tab == 3:
+            # WebEngine PDF graphics tab (interactive)
+            self.webengine_pdf_widget.export_graphic()
         else:
-            # Neither graphics tab is active
+            # Not on a graphics tab
             QMessageBox.warning(self, "Export Graphic", "Please switch to a Device Graphics tab first.")
 
     def show_help(self):

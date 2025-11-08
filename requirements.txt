@@ -3,6 +3,7 @@
 # Core Dependencies (Required for all builds)
 PyQt6>=6.6.0                # GUI framework
 PyQt6-SVG>=6.6.0            # SVG support for PyQt6
+PyQt6-WebEngine>=6.6.0      # Web browser widget for interactive PDF viewing
 python-docx>=1.1.0          # Word document generation
 reportlab>=4.0.0            # PDF generation
 PyMuPDF>=1.26.0             # PDF manipulation and form field handling
