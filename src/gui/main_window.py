@@ -34,6 +34,7 @@ from parser.xml_parser import ProfileParser
 from parser.label_generator import LabelGenerator
 from models.profile_model import ControlProfile
 from gui.device_graphics import DeviceGraphicsWidget
+from gui.pdf_device_graphics_widget import PDFDeviceGraphicsWidget
 from utils.settings import AppSettings
 from utils.version import get_version
 from utils.device_splitter import get_device_for_input
@@ -250,11 +251,16 @@ class MainWindow(QMainWindow):
         table_layout.addWidget(splitter)
         self.tab_widget.addTab(table_tab, "Controls Table")
 
-        # Tab 2: Device Graphics View
+        # Tab 2: Device Graphics View (SVG-based)
         templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "visual-templates")
         self.graphics_widget = DeviceGraphicsWidget(templates_dir)
         self.graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
-        self.tab_widget.addTab(self.graphics_widget, "Device Graphics")
+        self.tab_widget.addTab(self.graphics_widget, "Device Graphics (SVG)")
+
+        # Tab 3: PDF Device Graphics View (NEW - PDF-based templates)
+        self.pdf_graphics_widget = PDFDeviceGraphicsWidget(templates_dir)
+        self.pdf_graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
+        self.tab_widget.addTab(self.pdf_graphics_widget, "Device Graphics (PDF)")
 
         # Connect tab change signal to sync device selection
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
@@ -473,8 +479,9 @@ class MainWindow(QMainWindow):
         # Apply filters to show the rows (important when loading a new profile)
         self.apply_filters()
 
-        # Load profile into graphics widget
+        # Load profile into graphics widgets
         self.graphics_widget.load_profile(profile)
+        self.pdf_graphics_widget.load_profile(profile)
 
     def populate_controls_table(self):
         """Populate the controls table with bindings"""
@@ -755,8 +762,8 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Filters cleared - showing all {self.controls_table.rowCount()} bindings")
 
     def on_tab_changed(self, index: int):
-        """Handle tab change - sync device selection when switching to graphics tab"""
-        # Check if switched to Device Graphics tab (index 1)
+        """Handle tab change - sync device selection when switching to graphics tabs"""
+        # Check if switched to Device Graphics tab (SVG - index 1) or PDF Graphics tab (index 2)
         if index == 1:
             # Get the currently filtered device from the control table
             filtered_device = self.device_filter.currentText()
@@ -764,6 +771,12 @@ class MainWindow(QMainWindow):
             # If a specific device is selected (not "All Devices"), try to select it in graphics
             if filtered_device and filtered_device != "All Devices":
                 self.graphics_widget.select_device_by_name(filtered_device)
+        elif index == 2:
+            # PDF Graphics tab
+            filtered_device = self.device_filter.currentText()
+
+            if filtered_device and filtered_device != "All Devices":
+                self.pdf_graphics_widget.select_device_by_name(filtered_device)
 
     def on_item_double_clicked(self, item):
         """Handle double-click - prepare for editing"""
@@ -853,8 +866,9 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Warning: Label restored but couldn't update override file: {str(e)}")
                 logger.error(f"Error removing label override: {e}", exc_info=True)
 
-            # Update graphics widget
+            # Update graphics widgets
             self.graphics_widget.load_profile(self.current_profile)
+            self.pdf_graphics_widget.load_profile(self.current_profile)
 
             # Force reload override manager cache and repopulate the table
             override_manager.reload()
@@ -881,8 +895,9 @@ class MainWindow(QMainWindow):
             item.setText(new_label)
             self.controls_table.blockSignals(False)
 
-            # Update graphics widget
+            # Update graphics widgets
             self.graphics_widget.load_profile(self.current_profile)
+            self.pdf_graphics_widget.load_profile(self.current_profile)
 
             self.statusBar().showMessage(f"Custom label saved: '{binding.action_name}' → '{new_label}'")
             logger.info(f"Saved custom override for '{binding.action_name}': '{new_label}'")
@@ -1120,9 +1135,18 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Word export failed")
 
     def export_graphic(self):
-        """Export device graphic - delegate to graphics widget"""
-        # Call the graphics widget's export method
-        self.graphics_widget.export_graphic()
+        """Export device graphic - delegate to active graphics widget"""
+        # Check which graphics tab is active and call the appropriate widget
+        current_tab = self.tab_widget.currentIndex()
+        if current_tab == 1:
+            # SVG graphics tab
+            self.graphics_widget.export_graphic()
+        elif current_tab == 2:
+            # PDF graphics tab
+            self.pdf_graphics_widget.export_graphic()
+        else:
+            # Neither graphics tab is active
+            QMessageBox.warning(self, "Export Graphic", "Please switch to a Device Graphics tab first.")
 
     def show_help(self):
         """Show the user guide in a dialog"""

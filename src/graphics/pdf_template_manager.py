@@ -1,0 +1,295 @@
+"""
+PDF-based device template manager for loading, rendering, and populating PDFs
+
+This module handles PDF templates with interactive form fields for device visualization.
+"""
+
+import json
+import logging
+import os
+from typing import List, Optional, Dict
+from dataclasses import dataclass
+import fitz  # PyMuPDF
+from PyQt6.QtGui import QPixmap, QImage
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PDFDeviceTemplate:
+    """Represents a PDF-based device template"""
+    id: str
+    name: str
+    pdf_path: str
+    device_match_patterns: List[str]
+    device_type: str
+    manufacturer: Optional[str] = None
+    button_count: Optional[int] = None
+    axis_count: Optional[int] = None
+    hat_count: Optional[int] = None
+    default_joystick_index: Optional[int] = None
+    notes: Optional[str] = None
+    deprecated: bool = False
+
+
+class PDFTemplateManager:
+    """Manages PDF-based device templates"""
+
+    def __init__(self, templates_dir: str):
+        """
+        Initialize PDF template manager
+
+        Args:
+            templates_dir: Path to visual-templates directory
+        """
+        self.templates_dir = templates_dir
+        self.templates: List[PDFDeviceTemplate] = []
+        self.load_templates()
+
+    def load_templates(self):
+        """Load template registry from JSON (v2.0 schema)"""
+        registry_path = os.path.join(self.templates_dir, "template_registry.json")
+
+        if not os.path.exists(registry_path):
+            logger.warning(f"Template registry not found at {registry_path}")
+            return
+
+        try:
+            with open(registry_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            schema_version = data.get('schema_version', '1.0')
+            logger.info(f"Loading template registry (schema v{schema_version})")
+
+            for template_data in data.get('templates', []):
+                # Only load PDF templates (v2.0)
+                if 'pdf' not in template_data:
+                    logger.debug(f"Skipping non-PDF template: {template_data.get('id')}")
+                    continue
+
+                pdf_path = os.path.join(self.templates_dir, template_data['pdf'])
+
+                # Verify PDF exists
+                if not os.path.exists(pdf_path):
+                    logger.warning(f"PDF not found for template {template_data['id']}: {pdf_path}")
+                    continue
+
+                template = PDFDeviceTemplate(
+                    id=template_data['id'],
+                    name=template_data['name'],
+                    pdf_path=pdf_path,
+                    device_match_patterns=template_data['device_match_patterns'],
+                    device_type=template_data['type'],
+                    manufacturer=template_data.get('manufacturer'),
+                    button_count=template_data.get('button_count'),
+                    axis_count=template_data.get('axis_count'),
+                    hat_count=template_data.get('hat_count'),
+                    default_joystick_index=template_data.get('default_joystick_index'),
+                    notes=template_data.get('notes'),
+                    deprecated=template_data.get('deprecated', False)
+                )
+                self.templates.append(template)
+
+            logger.info(f"Loaded {len(self.templates)} PDF templates")
+
+        except Exception as e:
+            logger.error(f"Error loading template registry: {e}", exc_info=True)
+
+    def find_template(self, device_name: str) -> Optional[PDFDeviceTemplate]:
+        """
+        Find a template that matches the device name
+
+        Args:
+            device_name: Device name from XML (e.g., "VKBsim Gladiator EVO R")
+
+        Returns:
+            Matching PDFDeviceTemplate or None
+        """
+        if not device_name:
+            return None
+
+        device_name_lower = device_name.lower()
+
+        # Try pattern matching (skip deprecated templates)
+        for template in self.templates:
+            if template.deprecated:
+                continue
+
+            for pattern in template.device_match_patterns:
+                if pattern.lower() in device_name_lower:
+                    logger.debug(f"Matched device '{device_name}' to template '{template.name}'")
+                    return template
+
+        logger.debug(f"No template found for device: {device_name}")
+        return None
+
+    def get_template_by_id(self, template_id: str) -> Optional[PDFDeviceTemplate]:
+        """Get template by ID"""
+        for template in self.templates:
+            if template.id == template_id:
+                return template
+        return None
+
+    def get_all_templates(self) -> List[PDFDeviceTemplate]:
+        """Get all available templates (excluding deprecated)"""
+        return [t for t in self.templates if not t.deprecated]
+
+    def get_pdf_form_fields(self, template: PDFDeviceTemplate) -> Dict[str, Dict]:
+        """
+        Extract form fields from a PDF template
+
+        Args:
+            template: PDFDeviceTemplate to extract fields from
+
+        Returns:
+            Dictionary mapping field names to field info:
+            {
+                'js1_button1': {'type': 'text', 'rect': [x0, y0, x1, y1], 'value': ''},
+                'js1_x': {'type': 'text', 'rect': [x0, y0, x1, y1], 'value': ''},
+                ...
+            }
+        """
+        fields = {}
+
+        try:
+            doc = fitz.open(template.pdf_path)
+            page = doc[0]  # Assume single-page templates
+
+            for widget in page.widgets():
+                field_info = {
+                    'type': widget.field_type_string,
+                    'rect': [widget.rect.x0, widget.rect.y0, widget.rect.x1, widget.rect.y1],
+                    'value': widget.field_value or ''
+                }
+                fields[widget.field_name] = field_info
+
+            doc.close()
+            logger.debug(f"Extracted {len(fields)} form fields from {template.name}")
+
+        except Exception as e:
+            logger.error(f"Error extracting form fields from {template.pdf_path}: {e}", exc_info=True)
+
+        return fields
+
+    def populate_pdf(self, template: PDFDeviceTemplate, field_values: Dict[str, str],
+                     output_path: Optional[str] = None) -> Optional[str]:
+        """
+        Populate PDF form fields with values
+
+        Args:
+            template: PDFDeviceTemplate to populate
+            field_values: Dictionary mapping field names to values
+            output_path: Optional path to save populated PDF. If None, creates temp file.
+
+        Returns:
+            Path to populated PDF or None on error
+        """
+        try:
+            doc = fitz.open(template.pdf_path)
+            page = doc[0]
+
+            # Populate form fields
+            for widget in page.widgets():
+                field_name = widget.field_name
+                if field_name in field_values:
+                    widget.field_value = field_values[field_name]
+                    widget.update()
+
+            # Save populated PDF
+            if output_path is None:
+                # Create temp file in same directory as template
+                import tempfile
+                temp_dir = os.path.dirname(template.pdf_path)
+                fd, output_path = tempfile.mkstemp(suffix='.pdf', dir=temp_dir, prefix='populated_')
+                os.close(fd)
+
+            doc.save(output_path)
+            doc.close()
+
+            logger.debug(f"Populated PDF saved to {output_path}")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Error populating PDF {template.pdf_path}: {e}", exc_info=True)
+            return None
+
+    def render_pdf_to_pixmap(self, pdf_path: str, dpi: int = 150, page_num: int = 0) -> Optional[QPixmap]:
+        """
+        Render a PDF page to QPixmap for display in Qt
+
+        Args:
+            pdf_path: Path to PDF file
+            dpi: Resolution for rendering (default 150)
+            page_num: Page number to render (default 0 = first page)
+
+        Returns:
+            QPixmap or None on error
+        """
+        try:
+            doc = fitz.open(pdf_path)
+
+            if page_num >= len(doc):
+                logger.error(f"Page {page_num} does not exist in {pdf_path}")
+                doc.close()
+                return None
+
+            page = doc[page_num]
+
+            # Render page to pixmap
+            zoom = dpi / 72.0  # 72 DPI is default
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+
+            # Convert PyMuPDF pixmap to QImage
+            img_data = pix.samples  # raw pixel data
+            qimage = QImage(
+                img_data,
+                pix.width,
+                pix.height,
+                pix.stride,
+                QImage.Format.Format_RGB888 if pix.n == 3 else QImage.Format.Format_RGBA8888
+            )
+
+            # Convert QImage to QPixmap
+            pixmap = QPixmap.fromImage(qimage)
+
+            doc.close()
+            logger.debug(f"Rendered PDF page to {pix.width}x{pix.height} pixmap @ {dpi} DPI")
+            return pixmap
+
+        except Exception as e:
+            logger.error(f"Error rendering PDF {pdf_path}: {e}", exc_info=True)
+            return None
+
+    def render_template(self, template: PDFDeviceTemplate, field_values: Optional[Dict[str, str]] = None,
+                        dpi: int = 150) -> Optional[QPixmap]:
+        """
+        Render a template with optional field values populated
+
+        Args:
+            template: PDFDeviceTemplate to render
+            field_values: Optional dictionary of field values to populate
+            dpi: Resolution for rendering
+
+        Returns:
+            QPixmap or None on error
+        """
+        pdf_path = template.pdf_path
+
+        # If field values provided, create populated PDF first
+        if field_values:
+            pdf_path = self.populate_pdf(template, field_values)
+            if pdf_path is None:
+                return None
+
+        # Render PDF to pixmap
+        pixmap = self.render_pdf_to_pixmap(pdf_path, dpi=dpi)
+
+        # Clean up temp file if created
+        if field_values and pdf_path != template.pdf_path:
+            try:
+                os.remove(pdf_path)
+            except Exception as e:
+                logger.warning(f"Could not remove temp file {pdf_path}: {e}")
+
+        return pixmap

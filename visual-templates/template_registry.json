@@ -1,5 +1,22 @@
 {
+  "schema_version": "2.0-dev",
   "templates": [
+    {
+      "id": "test_joystick",
+      "name": "Test Joystick (Development)",
+      "pdf": "test_joystick/test_joystick.pdf",
+      "device_match_patterns": [
+        "Test Joystick",
+        "test_joystick"
+      ],
+      "type": "joystick",
+      "manufacturer": "Test",
+      "button_count": 10,
+      "axis_count": 2,
+      "hat_count": 1,
+      "default_joystick_index": null,
+      "notes": "Test template for PDF development - 10 buttons, 2 axes, 1 hat"
+    },
     {
       "id": "vkb_gladiator_evo_right",
       "name": "VKB Gladiator EVO (Right)",
