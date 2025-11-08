@@ -32,11 +32,13 @@ class InteractivePDFGraphicsView(QGraphicsView):
         super().__init__(scene)
         self._fit_on_resize = True
         self.field_regions = {}  # field_name -> QRectF (in scene coordinates)
+        self.field_values = {}  # field_name -> current_value
         self.dpi_scale = 1.0  # Scale factor from PDF to rendered image
 
-    def set_field_regions(self, field_regions: dict, dpi_scale: float):
+    def set_field_regions(self, field_regions: dict, field_values: dict, dpi_scale: float):
         """Set clickable field regions"""
         self.field_regions = field_regions
+        self.field_values = field_values
         self.dpi_scale = dpi_scale
 
     def resizeEvent(self, event):
@@ -55,7 +57,7 @@ class InteractivePDFGraphicsView(QGraphicsView):
             for field_name, rect in self.field_regions.items():
                 if rect.contains(scene_pos):
                     # Field clicked - emit signal with field name
-                    current_value = self.field_regions.get(f"{field_name}_value", "")
+                    current_value = self.field_values.get(field_name, "")
                     self.field_clicked.emit(field_name, current_value)
                     return
 
@@ -210,7 +212,7 @@ class PDFDeviceGraphicsWidget(QWidget):
         self.current_field_values = field_values
 
         # Get field regions for clickable areas
-        field_regions = self.get_field_regions(template, dpi=150)
+        field_regions, field_value_map = self.get_field_regions(template, dpi=150)
 
         # Render PDF with populated fields
         try:
@@ -228,7 +230,7 @@ class PDFDeviceGraphicsWidget(QWidget):
             self.scene.addItem(pixmap_item)
 
             # Set clickable field regions in the view
-            self.view.set_field_regions(field_regions, dpi_scale=150/72.0)
+            self.view.set_field_regions(field_regions, field_value_map, dpi_scale=150/72.0)
 
             # Fit view to scene
             self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -394,17 +396,20 @@ class PDFDeviceGraphicsWidget(QWidget):
         # Save image
         image.save(file_path, "PNG")
 
-    def get_field_regions(self, template: PDFDeviceTemplate, dpi: int = 150) -> dict:
+    def get_field_regions(self, template: PDFDeviceTemplate, dpi: int = 150):
         """
         Get field regions from PDF for click detection
 
         Returns:
-            Dictionary mapping input_code -> QRectF (scene coordinates) and field_name_value -> current_value
+            Tuple of (field_regions, field_values):
+            - field_regions: Dictionary mapping input_code -> QRectF (scene coordinates)
+            - field_values: Dictionary mapping input_code -> current_value
         """
         from PyQt6.QtCore import QRectF
         import fitz
 
         field_regions = {}
+        field_values = {}
 
         try:
             doc = fitz.open(template.pdf_path)
@@ -435,7 +440,7 @@ class PDFDeviceGraphicsWidget(QWidget):
                     field_regions[input_code] = scaled_rect
                     # Store current value for this field
                     current_value = self.current_field_values.get(input_code, "")
-                    field_regions[f"{input_code}_value"] = current_value
+                    field_values[input_code] = current_value
                     # Store reverse mapping
                     self.field_to_input_code[field_name] = input_code
 
@@ -444,7 +449,7 @@ class PDFDeviceGraphicsWidget(QWidget):
         except Exception as e:
             logger.error(f"Error getting field regions: {e}", exc_info=True)
 
-        return field_regions
+        return field_regions, field_values
 
     def map_pdf_field_to_input_code(self, pdf_field_name: str, field_mapping: dict) -> str:
         """Map PDF field name to Star Citizen input code"""
