@@ -491,22 +491,43 @@ class PDFDeviceGraphicsWidget(QWidget):
 
         if not binding:
             logger.warning(f"No binding found for {input_code}")
+            QMessageBox.information(
+                self,
+                "No Binding",
+                f"No binding found for {input_code}.\nThis button is not assigned to any action."
+            )
             return
 
         # Show dialog to edit label
         new_label, ok = QInputDialog.getText(
             self,
             "Edit Control Label",
-            f"Edit label for {input_code}:",
+            f"Edit label for {input_code}:\n({binding.action_name})",
             text=current_value
         )
 
-        if ok and new_label and new_label != current_value:
+        if ok and new_label != current_value:
+            if not new_label:
+                # Empty string - revert to default
+                new_label = LabelGenerator.get_default_action_label(binding.action_name)
+
             # Update binding's custom label
             self.update_binding_label(binding, new_label)
 
+            # Reload override manager cache
+            try:
+                from utils.label_overrides import get_override_manager
+            except ImportError:
+                from ..utils.label_overrides import get_override_manager
+
+            override_manager = get_override_manager()
+            override_manager.reload()
+
             # Reload the PDF with updated values
             self.load_device_pdf()
+
+            # Notify parent to update table if possible
+            self.notify_label_changed(binding)
 
             logger.info(f"Updated label for {input_code}: {new_label}")
 
@@ -547,3 +568,19 @@ class PDFDeviceGraphicsWidget(QWidget):
 
         except Exception as e:
             logger.error(f"Error updating binding label: {e}", exc_info=True)
+
+    def notify_label_changed(self, binding):
+        """Notify parent window that a label has changed"""
+        try:
+            # Try to find and update the main window's table
+            parent = self.parent()
+            while parent:
+                if hasattr(parent, 'populate_controls_table'):
+                    # Found main window - refresh the table
+                    parent.populate_controls_table()
+                    parent.apply_filters()
+                    logger.info("Updated main window's controls table")
+                    break
+                parent = parent.parent()
+        except Exception as e:
+            logger.warning(f"Could not update main window table: {e}")
