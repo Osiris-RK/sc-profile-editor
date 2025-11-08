@@ -509,7 +509,7 @@ class PDFDeviceGraphicsWidget(QWidget):
         if ok and new_label != current_value:
             if not new_label:
                 # Empty string - revert to default
-                new_label = LabelGenerator.get_default_action_label(binding.action_name)
+                new_label = LabelGenerator.generate_action_label(binding.action_name)
 
             # Update binding's custom label
             self.update_binding_label(binding, new_label)
@@ -555,7 +555,7 @@ class PDFDeviceGraphicsWidget(QWidget):
             override_manager = get_override_manager()
 
             # Get default label to check if new label is different
-            default_label = LabelGenerator.get_default_action_label(binding.action_name)
+            default_label = LabelGenerator.generate_action_label(binding.action_name)
 
             if new_label == default_label:
                 # New label matches default - remove custom override
