@@ -51,6 +51,11 @@ class TemplateManager:
                 data = json.load(f)
 
             for template_data in data.get('templates', []):
+                # Skip PDF-only templates (v2.0 schema)
+                if 'image' not in template_data:
+                    logger.debug(f"Skipping PDF-only template: {template_data.get('id')}")
+                    continue
+
                 overlay_path = None
                 if 'overlay' in template_data:
                     overlay_path = os.path.join(self.templates_dir, template_data['overlay'])
