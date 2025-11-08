@@ -67,6 +67,50 @@
       ],
       "type": "throttle",
       "buttons": {}
+    },
+    {
+      "id": "vkb_f16_mfd",
+      "name": "VKB F16 MFD",
+      "image": "vkb_f16_mfd/vkb_f16_mfd.png",
+      "overlay": "vkb_f16_mfd/vkb_f16_mfd_overlay.svg",
+      "device_match_patterns": [
+        "F16 MFD",
+        "VKB F16 MFD",
+        "F-16 MFD"
+      ],
+      "type": "mfd",
+      "buttons": {},
+      "button_range": [1, 22]
+    },
+    {
+      "id": "vkb_thq",
+      "name": "VKB Throttle Quadrant THQ",
+      "image": "vkb_thq/vkb_thq.png",
+      "overlay": "vkb_thq/vkb_thq_overlay.svg",
+      "device_match_patterns": [
+        "VKB THQ",
+        "VKB Throttle Quadrant",
+        "Throttle Quadrant THQ",
+        "GNX-THQ"
+      ],
+      "type": "throttle",
+      "buttons": {},
+      "button_range": [1, 8]
+    },
+    {
+      "id": "vkb_gunfighter_mcgu",
+      "name": "VKB Gunfighter MCG Ultimate",
+      "image": "vkb_gunfighter_mcgu/vkb_gunfighter_mcgu.png",
+      "overlay": "vkb_gunfighter_mcgu/vkb_gunfighter_mcgu_overlay.svg",
+      "device_match_patterns": [
+        "VKBSim Gunfighter MCG Ultimate",
+        "Gunfighter MCG Ultimate",
+        "MCG Ultimate",
+        "MCGU"
+      ],
+      "type": "joystick",
+      "buttons": {},
+      "button_range": [1, 39]
     }
   ]
 }
