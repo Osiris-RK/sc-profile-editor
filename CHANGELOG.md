@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-08
+
+### Added
+- **Expanded device template support** - Added templates for additional VKB devices:
+  - VKB F16 MFD (Multi-Function Display)
+  - VKB Throttle Quadrant (THQ)
+  - VKB Gunfighter MCG Ultimate (MCGU) joystick
+- Added example profile (`example-profiles/layout_19APR2025_exported.xml`) for testing
+
+### Changed
+- Cleaned up visual-scratch directory (removed temporary development images)
+- Updated .gitignore to exclude visual-scratch directory
+
 ## [0.2.1] - 2025-10-28
 
 ### Fixed

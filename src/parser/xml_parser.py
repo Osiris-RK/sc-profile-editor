@@ -136,9 +136,8 @@ class ProfileParser:
             for action_elem in actionmap_elem.findall('action'):
                 action_name = action_elem.get('name', 'unknown')
 
-                # Find rebind element
-                rebind_elem = action_elem.find('rebind')
-                if rebind_elem is not None:
+                # Find all rebind elements (actions can have multiple bindings)
+                for rebind_elem in action_elem.findall('rebind'):
                     input_code = rebind_elem.get('input', '')
                     activation_mode = rebind_elem.get('activationMode')
 
