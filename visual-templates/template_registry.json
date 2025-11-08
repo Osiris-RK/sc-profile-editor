@@ -99,11 +99,11 @@
       ],
       "type": "mfd",
       "manufacturer": "VKB",
-      "button_count": 22,
+      "button_count": 25,
       "axis_count": 0,
       "hat_count": 0,
       "buttons": {},
-      "button_range": [1, 22]
+      "button_range": [1, 25]
     },
     {
       "id": "vkb_thq",

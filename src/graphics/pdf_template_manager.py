@@ -171,6 +171,28 @@ class PDFTemplateManager:
 
         return fields
 
+    def load_field_mapping(self, template: PDFDeviceTemplate) -> Optional[Dict]:
+        """
+        Load field mapping for templates with non-standard field names
+
+        Args:
+            template: PDFDeviceTemplate to load mapping for
+
+        Returns:
+            Mapping dictionary or None if no mapping exists
+        """
+        mapping_path = os.path.join(os.path.dirname(template.pdf_path), "field_mapping.json")
+
+        if not os.path.exists(mapping_path):
+            return None
+
+        try:
+            with open(mapping_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading field mapping from {mapping_path}: {e}")
+            return None
+
     def populate_pdf(self, template: PDFDeviceTemplate, field_values: Dict[str, str],
                      output_path: Optional[str] = None) -> Optional[str]:
         """
@@ -178,7 +200,7 @@ class PDFTemplateManager:
 
         Args:
             template: PDFDeviceTemplate to populate
-            field_values: Dictionary mapping field names to values
+            field_values: Dictionary mapping field names (e.g., "js1_button1") to values
             output_path: Optional path to save populated PDF. If None, creates temp file.
 
         Returns:
@@ -188,11 +210,40 @@ class PDFTemplateManager:
             doc = fitz.open(template.pdf_path)
             page = doc[0]
 
+            # Load field mapping if exists
+            field_mapping = self.load_field_mapping(template)
+
+            # Create reverse mapping: PDF field name -> value
+            pdf_field_values = {}
+
+            if field_mapping:
+                # Template uses custom field names - need to map
+                button_mapping = field_mapping.get('button_mapping', {})
+
+                for input_code, value in field_values.items():
+                    # Extract button number from input code (e.g., "js1_button5" -> 5)
+                    import re
+                    match = re.match(r'js\d+_button(\d+)', input_code)
+                    if match:
+                        button_num = int(match.group(1))
+
+                        # Find PDF field name for this button number
+                        for pdf_name, btn_num in button_mapping.items():
+                            if btn_num == button_num:
+                                # Try both _1 and _2 suffixes (for multi-device PDFs)
+                                pdf_field_values[f"{pdf_name}_1"] = value
+                                pdf_field_values[f"{pdf_name}_2"] = value
+                                # Also try without suffix
+                                pdf_field_values[pdf_name] = value
+            else:
+                # No mapping - PDF field names match input codes directly
+                pdf_field_values = field_values
+
             # Populate form fields
             for widget in page.widgets():
                 field_name = widget.field_name
-                if field_name in field_values:
-                    widget.field_value = field_values[field_name]
+                if field_name in pdf_field_values:
+                    widget.field_value = pdf_field_values[field_name]
                     widget.update()
 
             # Save populated PDF

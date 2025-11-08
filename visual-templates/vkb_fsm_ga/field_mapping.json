@@ -1,0 +1,34 @@
+{
+  "comment": "Mapping from PDF field names to button numbers for VKB FSM GA MFD",
+  "device_columns": {
+    "_1": "First MFD (left column)",
+    "_2": "Second MFD (right column)"
+  },
+  "button_mapping": {
+    "USER": 1,
+    "HDG": 2,
+    "TRK": 3,
+    "NAV": 4,
+    "APR": 5,
+    "HDG_TRK_PUSH": 6,
+    "HDG_TRK_L": 7,
+    "HDG_TRK_R": 8,
+    "VS_ENC_UP": 9,
+    "VS_ENC_DN": 10,
+    "ALT_SEL_L": 11,
+    "ALT_SEL_R": 12,
+    "ALT_SEL_PUSH": 13,
+    "ALT": 14,
+    "LVL": 15,
+    "VNAV": 16,
+    "IAS": 17,
+    "AVI": 18,
+    "LDGLHT": 19,
+    "STROBE": 20,
+    "NAVLHT": 21,
+    "AP": 22,
+    "FD": 23,
+    "YD": 24,
+    "VS": 25
+  }
+}
