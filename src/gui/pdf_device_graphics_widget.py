@@ -22,18 +22,45 @@ from utils.device_joystick_mapper import DeviceJoystickMapper
 logger = logging.getLogger(__name__)
 
 
-class ResizableGraphicsView(QGraphicsView):
-    """Custom QGraphicsView that re-fits content on resize"""
+class InteractivePDFGraphicsView(QGraphicsView):
+    """Custom QGraphicsView with clickable form fields"""
+
+    # Signal emitted when a field is clicked: (field_name, current_value)
+    field_clicked = pyqtSignal(str, str)
 
     def __init__(self, scene):
         super().__init__(scene)
         self._fit_on_resize = True
+        self.field_regions = {}  # field_name -> QRectF (in scene coordinates)
+        self.dpi_scale = 1.0  # Scale factor from PDF to rendered image
+
+    def set_field_regions(self, field_regions: dict, dpi_scale: float):
+        """Set clickable field regions"""
+        self.field_regions = field_regions
+        self.dpi_scale = dpi_scale
 
     def resizeEvent(self, event):
         """Re-fit the view when resized"""
         super().resizeEvent(event)
         if self._fit_on_resize and self.scene() and not self.scene().sceneRect().isEmpty():
             self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+
+    def mousePressEvent(self, event):
+        """Handle mouse clicks to detect field clicks"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Map view coordinates to scene coordinates
+            scene_pos = self.mapToScene(event.pos())
+
+            # Check if click is within any field region
+            for field_name, rect in self.field_regions.items():
+                if rect.contains(scene_pos):
+                    # Field clicked - emit signal with field name
+                    current_value = self.field_regions.get(f"{field_name}_value", "")
+                    self.field_clicked.emit(field_name, current_value)
+                    return
+
+        # Default handling for non-field clicks
+        super().mousePressEvent(event)
 
 
 class PDFDeviceGraphicsWidget(QWidget):
@@ -50,6 +77,8 @@ class PDFDeviceGraphicsWidget(QWidget):
         self.current_device: Device = None
         self.current_template: PDFDeviceTemplate = None
         self.device_mapper: DeviceJoystickMapper = None
+        self.current_field_values: dict = {}  # Store current field values
+        self.field_to_input_code: dict = {}  # Map PDF field names to input codes
 
         self.setup_ui()
 
@@ -68,12 +97,13 @@ class PDFDeviceGraphicsWidget(QWidget):
 
         layout.addLayout(selection_layout)
 
-        # Graphics view
+        # Graphics view (interactive)
         self.scene = QGraphicsScene()
-        self.view = ResizableGraphicsView(self.scene)
+        self.view = InteractivePDFGraphicsView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-        self.view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.view.setDragMode(QGraphicsView.DragMode.NoDrag)  # Allow clicks
+        self.view.field_clicked.connect(self.on_field_clicked)
         layout.addWidget(self.view)
 
         # Status label
@@ -177,6 +207,10 @@ class PDFDeviceGraphicsWidget(QWidget):
 
         # Get field values from bindings
         field_values = self.get_field_values_for_device()
+        self.current_field_values = field_values
+
+        # Get field regions for clickable areas
+        field_regions = self.get_field_regions(template, dpi=150)
 
         # Render PDF with populated fields
         try:
@@ -193,10 +227,13 @@ class PDFDeviceGraphicsWidget(QWidget):
             pixmap_item = QGraphicsPixmapItem(pixmap)
             self.scene.addItem(pixmap_item)
 
+            # Set clickable field regions in the view
+            self.view.set_field_regions(field_regions, dpi_scale=150/72.0)
+
             # Fit view to scene
             self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
-            self.status_label.setText(f"Loaded: {template.name} ({len(field_values)} fields populated)")
+            self.status_label.setText(f"Loaded: {template.name} ({len(field_values)} fields populated) - Click fields to edit")
             self.export_available_changed.emit(True)
 
         except Exception as e:
@@ -356,3 +393,152 @@ class PDFDeviceGraphicsWidget(QWidget):
 
         # Save image
         image.save(file_path, "PNG")
+
+    def get_field_regions(self, template: PDFDeviceTemplate, dpi: int = 150) -> dict:
+        """
+        Get field regions from PDF for click detection
+
+        Returns:
+            Dictionary mapping input_code -> QRectF (scene coordinates) and field_name_value -> current_value
+        """
+        from PyQt6.QtCore import QRectF
+        import fitz
+
+        field_regions = {}
+
+        try:
+            doc = fitz.open(template.pdf_path)
+            page = doc[0]
+
+            # Get field mapping if exists
+            field_mapping = self.pdf_manager.load_field_mapping(template)
+
+            # DPI scale factor
+            zoom = dpi / 72.0
+
+            for widget in page.widgets():
+                field_name = widget.field_name
+                rect = widget.rect
+
+                # Scale rect to match rendered image
+                scaled_rect = QRectF(
+                    rect.x0 * zoom,
+                    rect.y0 * zoom,
+                    (rect.x1 - rect.x0) * zoom,
+                    (rect.y1 - rect.y0) * zoom
+                )
+
+                # Map PDF field name to input code
+                input_code = self.map_pdf_field_to_input_code(field_name, field_mapping)
+
+                if input_code:
+                    field_regions[input_code] = scaled_rect
+                    # Store current value for this field
+                    current_value = self.current_field_values.get(input_code, "")
+                    field_regions[f"{input_code}_value"] = current_value
+                    # Store reverse mapping
+                    self.field_to_input_code[field_name] = input_code
+
+            doc.close()
+
+        except Exception as e:
+            logger.error(f"Error getting field regions: {e}", exc_info=True)
+
+        return field_regions
+
+    def map_pdf_field_to_input_code(self, pdf_field_name: str, field_mapping: dict) -> str:
+        """Map PDF field name to Star Citizen input code"""
+        if not self.device_mapper:
+            return None
+
+        # Get JS index for this device
+        js_index = self.device_mapper.get_js_index_for_device(self.current_device.product_name or "")
+        if not js_index:
+            return None
+
+        js_num = js_index.replace("js", "")
+
+        if field_mapping:
+            # Has custom mapping - reverse lookup
+            button_mapping = field_mapping.get('button_mapping', {})
+
+            # Remove _1 or _2 suffix if present
+            base_field_name = pdf_field_name
+            if pdf_field_name.endswith('_1') or pdf_field_name.endswith('_2'):
+                base_field_name = pdf_field_name[:-2]
+
+            # Find button number for this PDF field
+            button_num = button_mapping.get(base_field_name)
+            if button_num:
+                return f"js{js_num}_button{button_num}"
+        else:
+            # Direct mapping - PDF field should be input code
+            return pdf_field_name
+
+        return None
+
+    def on_field_clicked(self, input_code: str, current_value: str):
+        """Handle click on a PDF form field"""
+        from PyQt6.QtWidgets import QInputDialog
+
+        # Find the binding for this input code
+        binding = self.find_binding_by_input_code(input_code)
+
+        if not binding:
+            logger.warning(f"No binding found for {input_code}")
+            return
+
+        # Show dialog to edit label
+        new_label, ok = QInputDialog.getText(
+            self,
+            "Edit Control Label",
+            f"Edit label for {input_code}:",
+            text=current_value
+        )
+
+        if ok and new_label and new_label != current_value:
+            # Update binding's custom label
+            self.update_binding_label(binding, new_label)
+
+            # Reload the PDF with updated values
+            self.load_device_pdf()
+
+            logger.info(f"Updated label for {input_code}: {new_label}")
+
+    def find_binding_by_input_code(self, input_code: str):
+        """Find binding object by input code"""
+        if not self.current_profile:
+            return None
+
+        for action_map in self.current_profile.action_maps:
+            for binding in action_map.actions:
+                if binding.input_code == input_code:
+                    return binding
+
+        return None
+
+    def update_binding_label(self, binding, new_label: str):
+        """Update a binding's custom label"""
+        try:
+            # Import label override manager
+            try:
+                from utils.label_overrides import get_override_manager
+            except ImportError:
+                from ..utils.label_overrides import get_override_manager
+
+            override_manager = get_override_manager()
+
+            # Get default label to check if new label is different
+            default_label = LabelGenerator.get_default_action_label(binding.action_name)
+
+            if new_label == default_label:
+                # New label matches default - remove custom override
+                override_manager.remove_custom_override(binding.action_name)
+                binding.custom_label = None
+            else:
+                # Save as custom override
+                override_manager.set_custom_override(binding.action_name, new_label)
+                binding.custom_label = new_label
+
+        except Exception as e:
+            logger.error(f"Error updating binding label: {e}", exc_info=True)
