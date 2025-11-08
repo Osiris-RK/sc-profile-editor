@@ -86,16 +86,22 @@
       "buttons": {}
     },
     {
-      "id": "vkb_f16_mfd",
-      "name": "VKB F16 MFD",
-      "image": "vkb_f16_mfd/vkb_f16_mfd.png",
-      "overlay": "vkb_f16_mfd/vkb_f16_mfd_overlay.svg",
+      "id": "vkb_fsm_ga",
+      "name": "VKB FSM GA (F16 MFD)",
+      "image": "vkb_fsm_ga/vkb_fsm_ga.png",
+      "overlay": "vkb_fsm_ga/vkb_fsm_ga_overlay.svg",
+      "pdf": "vkb_fsm_ga/VKB-FSM-GA-v1.0.pdf",
       "device_match_patterns": [
         "F16 MFD",
         "VKB F16 MFD",
-        "F-16 MFD"
+        "F-16 MFD",
+        "FSM GA"
       ],
       "type": "mfd",
+      "manufacturer": "VKB",
+      "button_count": 22,
+      "axis_count": 0,
+      "hat_count": 0,
       "buttons": {},
       "button_range": [1, 22]
     },
