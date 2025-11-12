@@ -1,5 +1,5 @@
 """
-Star Citizen Profile Viewer
+Star Citizen Profile Editor
 Main entry point for the application
 """
 
@@ -25,10 +25,10 @@ def main():
     # Setup logging first
     setup_logging()
     logger = logging.getLogger(__name__)
-    logger.info("Starting Star Citizen Profile Viewer")
+    logger.info("Starting Star Citizen Profile Editor")
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Star Citizen Profile Viewer")
+    app.setApplicationName("Star Citizen Profile Editor")
     app.setOrganizationName("SC Tools")
 
     window = MainWindow()

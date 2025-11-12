@@ -38,6 +38,8 @@ class ControlProfile:
     devices: List[Device]
     action_maps: List[ActionMap]
     categories: List[str]
+    is_modified: bool = False  # Track if profile has unsaved changes
+    source_xml_path: Optional[str] = None  # Path to original XML file
 
     def get_all_bindings(self) -> List[ActionBinding]:
         """Get all action bindings across all action maps"""
@@ -45,3 +47,11 @@ class ControlProfile:
         for action_map in self.action_maps:
             bindings.extend(action_map.actions)
         return bindings
+
+    def mark_modified(self):
+        """Mark the profile as having unsaved changes"""
+        self.is_modified = True
+
+    def mark_saved(self):
+        """Mark the profile as saved (no unsaved changes)"""
+        self.is_modified = False

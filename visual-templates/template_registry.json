@@ -20,48 +20,107 @@
     {
       "id": "vkb_gladiator_evo_right",
       "name": "VKB Gladiator EVO (Right)",
-      "image": "vkb_gladiator_evo_right/vkb_gladiator_evo_right.png",
-      "overlay": "vkb_gladiator_evo_right/vkb_gladiator_evo_right_overlay.svg",
       "device_match_patterns": [
         "VKBsim Gladiator EVO R",
         "Gladiator EVO R"
       ],
       "type": "joystick",
+      "manufacturer": "VKB",
       "buttons": {},
       "button_range": [1, 40]
     },
     {
       "id": "vkb_gladiator_evo_left",
       "name": "VKB Gladiator EVO (Left)",
-      "image": "vkb_gladiator_evo_left/vkb_gladiator_evo_left.png",
-      "overlay": "vkb_gladiator_evo_left/vkb_gladiator_evo_left_overlay.svg",
       "device_match_patterns": [
         "VKBsim Gladiator EVO L",
         "Gladiator EVO L"
       ],
       "type": "joystick",
+      "manufacturer": "VKB",
       "buttons": {},
       "button_range": [1, 40]
     },
     {
+      "id": "vkb_gladiator_scg_rh",
+      "name": "VKB Gladiator SCG (Right)",
+      "pdf": "vkb_gladiator_scg_rh/VKB-Gladiator-SCG-RH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBsim Gladiator SCG R",
+        "Gladiator SCG R",
+        "VKB Gladiator SCG Right"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB"
+    },
+    {
+      "id": "vkb_gladiator_scg_lh",
+      "name": "VKB Gladiator SCG (Left)",
+      "pdf": "vkb_gladiator_scg_lh/VKB-Gladiator-SCG-LH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBsim Gladiator SCG L",
+        "Gladiator SCG L",
+        "VKB Gladiator SCG Left"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB"
+    },
+    {
+      "id": "vkb_gladiator_scg_ota_rh",
+      "name": "VKB Gladiator SCG OTA (Right)",
+      "pdf": "vkb_gladiator_scg_ota_rh/VKB-Gladiator-SCG-OTA-RH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBsim Gladiator SCG OTA R",
+        "Gladiator SCG OTA R",
+        "VKB Gladiator SCG OTA Right"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB",
+      "notes": "SCG with Omni Throttle Adapter"
+    },
+    {
+      "id": "vkb_gladiator_scg_ota_lh",
+      "name": "VKB Gladiator SCG OTA (Left)",
+      "pdf": "vkb_gladiator_scg_ota_lh/VKB-Gladiator-SCG-OTA-LH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBsim Gladiator SCG OTA L",
+        "Gladiator SCG OTA L",
+        "VKB Gladiator SCG OTA Left"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB",
+      "notes": "SCG with Omni Throttle Adapter"
+    },
+    {
       "id": "vkb_sem",
       "name": "VKB SEM",
-      "image": "vkb_sem/vkb_sem.png",
-      "template_image": "vkb_sem/vkb_sem.png",
-      "overlay": "vkb_sem/vkb_sem.svg",
+      "pdf": "vkb_sem/VKB-SEM-v1.0.pdf",
       "device_match_patterns": [
         "VKB SEM",
         "SEM"
       ],
-      "type": "joystick",
+      "type": "module",
+      "manufacturer": "VKB",
       "buttons": {},
-      "button_range": [41, 64]
+      "button_range": [41, 64],
+      "notes": "Space Extension Module - attaches to Gladiator sticks"
+    },
+    {
+      "id": "vkb_sem_v",
+      "name": "VKB SEM-V",
+      "pdf": "vkb_sem_v/VKB-SEM-V-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB SEM-V",
+        "SEM-V",
+        "VKB SEM V"
+      ],
+      "type": "module",
+      "manufacturer": "VKB",
+      "notes": "Space Extension Module variant"
     },
     {
       "id": "vpc_mt50cm3_right",
       "name": "VPC MT-50CM3 (Right)",
-      "image": "vpc_mt50cm3_right/vpc_mt50cm3_right.png",
-      "overlay": "vpc_mt50cm3_right/vpc_mt50cm3_right_template_overlay.svg",
       "device_match_patterns": [
         "RIGHT VPC Stick MT-50CM3",
         "VPC MT-50CM3",
@@ -69,13 +128,12 @@
         "VPC Stick MT-50CM3"
       ],
       "type": "joystick",
+      "manufacturer": "VPC",
       "buttons": {}
     },
     {
       "id": "thrustmaster_twcs_throttle",
       "name": "Thrustmaster TWCS Throttle",
-      "image": "thrustmaster_twcs_throttle/thrustmaster_twcs_throttle.png",
-      "overlay": "thrustmaster_twcs_throttle/thrustmaster_twcs_throttle.svg",
       "device_match_patterns": [
         "Thrustmaster TWCS Throttle",
         "TWCS Throttle",
@@ -83,19 +141,19 @@
         "Thrustmaster Throttle"
       ],
       "type": "throttle",
+      "manufacturer": "Thrustmaster",
       "buttons": {}
     },
     {
       "id": "vkb_fsm_ga",
-      "name": "VKB FSM GA (F16 MFD)",
-      "image": "vkb_fsm_ga/vkb_fsm_ga.png",
-      "overlay": "vkb_fsm_ga/vkb_fsm_ga_overlay.svg",
+      "name": "VKB FSM-GA (F16 MFD)",
       "pdf": "vkb_fsm_ga/VKB-FSM-GA-v1.0.pdf",
       "device_match_patterns": [
         "F16 MFD",
         "VKB F16 MFD",
         "F-16 MFD",
-        "FSM GA"
+        "FSM GA",
+        "VKB FSM-GA"
       ],
       "type": "mfd",
       "manufacturer": "VKB",
@@ -108,8 +166,7 @@
     {
       "id": "vkb_thq",
       "name": "VKB Throttle Quadrant THQ",
-      "image": "vkb_thq/vkb_thq.png",
-      "overlay": "vkb_thq/vkb_thq_overlay.svg",
+      "pdf": "vkb_thq/VKB-THQ-v1.0.pdf",
       "device_match_patterns": [
         "VKB THQ",
         "VKB Throttle Quadrant",
@@ -117,14 +174,53 @@
         "GNX-THQ"
       ],
       "type": "throttle",
+      "manufacturer": "VKB",
       "buttons": {},
       "button_range": [1, 8]
     },
     {
+      "id": "vkb_thq_v",
+      "name": "VKB Throttle Quadrant THQ-V",
+      "pdf": "vkb_thq_v/VKB-THQ-V-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB THQ-V",
+        "VKB THQ V",
+        "Throttle Quadrant THQ-V"
+      ],
+      "type": "throttle",
+      "manufacturer": "VKB",
+      "notes": "THQ variant configuration"
+    },
+    {
+      "id": "vkb_thq_ww2",
+      "name": "VKB Throttle Quadrant THQ-WW2",
+      "pdf": "vkb_thq_ww2/VKB-THQ-WW2-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB THQ-WW2",
+        "VKB THQ WW2",
+        "Throttle Quadrant THQ-WW2"
+      ],
+      "type": "throttle",
+      "manufacturer": "VKB",
+      "notes": "THQ with WW2 configuration"
+    },
+    {
+      "id": "vkb_thq_v_ww2",
+      "name": "VKB Throttle Quadrant THQ-V-WW2",
+      "pdf": "vkb_thq_v_ww2/VKB-THQ-V-WW2-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB THQ-V-WW2",
+        "VKB THQ V WW2",
+        "Throttle Quadrant THQ-V-WW2"
+      ],
+      "type": "throttle",
+      "manufacturer": "VKB",
+      "notes": "THQ-V with WW2 configuration"
+    },
+    {
       "id": "vkb_gunfighter_mcgu",
       "name": "VKB Gunfighter MCG Ultimate",
-      "image": "vkb_gunfighter_mcgu/vkb_gunfighter_mcgu.png",
-      "overlay": "vkb_gunfighter_mcgu/vkb_gunfighter_mcgu_overlay.svg",
+      "pdf": "vkb_gunfighter_mcgu/VKB-Gunfighter-MCGU-v1.2.pdf",
       "device_match_patterns": [
         "VKBSim Gunfighter MCG Ultimate",
         "Gunfighter MCG Ultimate",
@@ -132,8 +228,124 @@
         "MCGU"
       ],
       "type": "joystick",
+      "manufacturer": "VKB",
       "buttons": {},
       "button_range": [1, 39]
+    },
+    {
+      "id": "vkb_gunfighter_scg_rh",
+      "name": "VKB Gunfighter SCG (Right)",
+      "pdf": "vkb_gunfighter_scg_rh/VKB-Gunfighter-SCG-RH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBSim Gunfighter SCG R",
+        "Gunfighter SCG R",
+        "VKB Gunfighter SCG Right"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB"
+    },
+    {
+      "id": "vkb_gunfighter_scg_lh",
+      "name": "VKB Gunfighter SCG (Left)",
+      "pdf": "vkb_gunfighter_scg_lh/VKB-Gunfighter-SCG-LH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBSim Gunfighter SCG L",
+        "Gunfighter SCG L",
+        "VKB Gunfighter SCG Left"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB"
+    },
+    {
+      "id": "vkb_gunfighter_scg_ota_rh",
+      "name": "VKB Gunfighter SCG OTA (Right)",
+      "pdf": "vkb_gunfighter_scg_ota_rh/VKB-Gunfighter-SCG-OTA-RH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBSim Gunfighter SCG OTA R",
+        "Gunfighter SCG OTA R",
+        "VKB Gunfighter SCG OTA Right"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB",
+      "notes": "SCG with Omni Throttle Adapter"
+    },
+    {
+      "id": "vkb_gunfighter_scg_ota_lh",
+      "name": "VKB Gunfighter SCG OTA (Left)",
+      "pdf": "vkb_gunfighter_scg_ota_lh/VKB-Gunfighter-SCG-OTA-LH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKBSim Gunfighter SCG OTA L",
+        "Gunfighter SCG OTA L",
+        "VKB Gunfighter SCG OTA Left"
+      ],
+      "type": "joystick",
+      "manufacturer": "VKB",
+      "notes": "SCG with Omni Throttle Adapter"
+    },
+    {
+      "id": "vkb_stecs",
+      "name": "VKB STECS Throttle",
+      "pdf": "vkb_stecs/VKB-STECS-v1.1.pdf",
+      "device_match_patterns": [
+        "VKB STECS",
+        "STECS",
+        "VKB Space Throttle"
+      ],
+      "type": "throttle",
+      "manufacturer": "VKB",
+      "notes": "Space/Throttle/Engine Control System base unit"
+    },
+    {
+      "id": "vkb_stecs_stem",
+      "name": "VKB STECS STEM",
+      "pdf": "vkb_stecs_stem/VKB-STECS-STEM-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB STECS STEM",
+        "STECS STEM",
+        "VKB STEM"
+      ],
+      "type": "module",
+      "manufacturer": "VKB",
+      "notes": "Space Throttle Extension Module for STECS"
+    },
+    {
+      "id": "vkb_stecs_atem",
+      "name": "VKB STECS ATEM",
+      "pdf": "vkb_stecs_atem/VKB-STECS-ATEM-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB STECS ATEM",
+        "STECS ATEM",
+        "VKB ATEM"
+      ],
+      "type": "module",
+      "manufacturer": "VKB",
+      "notes": "Advanced Throttle Extension Module for STECS"
+    },
+    {
+      "id": "vkb_stecs_spacethrottlegrip_rh",
+      "name": "VKB STECS Space Throttle Grip (Right)",
+      "pdf": "vkb_stecs_spacethrottlegrip_rh/VKB-STECS-SpaceThrottleGrip-RH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB STECS Space Throttle Grip R",
+        "STECS Space Throttle Grip Right",
+        "VKB Space Throttle Grip RH"
+      ],
+      "type": "grip",
+      "manufacturer": "VKB",
+      "notes": "Space Throttle Grip for STECS (Right hand)"
+    },
+    {
+      "id": "vkb_stecs_spacethrottlegrip_lh",
+      "name": "VKB STECS Space Throttle Grip (Left)",
+      "pdf": "vkb_stecs_spacethrottlegrip_lh/VKB-STECS-SpaceThrottleGrip-LH-v1.0.pdf",
+      "device_match_patterns": [
+        "VKB STECS Space Throttle Grip L",
+        "STECS Space Throttle Grip Left",
+        "VKB Space Throttle Grip LH"
+      ],
+      "type": "grip",
+      "manufacturer": "VKB",
+      "notes": "Space Throttle Grip for STECS (Left hand)"
     }
   ]
 }

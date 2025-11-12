@@ -1,6 +1,6 @@
-# Star Citizen Profile Viewer
+# Star Citizen Profile Editor
 
-A desktop application for converting Star Citizen control profile XML files into human-readable formats (PDF, Word, CSV) with annotated device graphics.
+A desktop application for editing and converting Star Citizen control profile XML files into human-readable formats (PDF, Word, CSV) with annotated device graphics.
 
 > **Note:** This README is for developers. For end-user documentation, see [USER_GUIDE.md](USER_GUIDE.md).
 
@@ -12,7 +12,7 @@ A desktop application for converting Star Citizen control profile XML files into
 - Export to multiple formats: PDF, Word, CSV, PNG
 - Edit control labels with persistent custom overrides
 - Support for keyboard, mouse, and HOTAS devices
-- SVG-based template system for device graphics
+- Interactive PDF-based template system for device graphics
 - Filter and search control bindings
 - Auto-save last opened profile
 
@@ -24,7 +24,7 @@ sc-profile-viewer/
 │   ├── main.py                # Application entry point
 │   ├── gui/                   # GUI components (PyQt6)
 │   │   ├── main_window.py    # Main application window
-│   │   └── device_graphics.py # Device visualization widget
+│   │   └── webengine_pdf_widget.py # Interactive PDF device viewer
 │   ├── parser/                # XML parsing and label generation
 │   │   ├── xml_parser.py     # SC profile XML parser
 │   │   └── label_generator.py # Human-readable label generator
@@ -34,8 +34,7 @@ sc-profile-viewer/
 │   │   ├── word_exporter.py  # Word document export
 │   │   └── graphic_exporter.py # Graphics export
 │   ├── graphics/              # Graphics and template management
-│   │   ├── template_manager.py # Device template loader
-│   │   └── svg_generator.py   # SVG overlay generation
+│   │   └── pdf_template_manager.py # PDF template loader
 │   ├── models/                # Data models
 │   │   └── profile_model.py  # Control profile data structures
 │   └── utils/                 # Utilities
@@ -44,8 +43,7 @@ sc-profile-viewer/
 │       └── version.py        # Version management utilities
 ├── scripts/                    # Build and utility scripts
 │   └── build/                 # Build scripts
-│       ├── build_exe.py      # Standard build (no OCR)
-│       └── build_exe_with_ocr.py # Build with OCR support
+│       └── build_exe.py      # Standard build
 ├── visual-templates/          # Device graphics templates
 ├── example-profiles/          # Sample SC profile XML files
 ├── assets/                    # Application assets (icons, images)
@@ -122,10 +120,7 @@ You can update the version manually by editing `VERSION.TXT`, or use the build s
 
 ## Building Executables
 
-The project includes two build configurations:
-
-### 1. Standard Build (Recommended for End Users)
-For most users, excludes OCR dependencies for faster startup and smaller file size.
+### Standard Build
 
 ```bash
 # Build without version increment
@@ -142,19 +137,6 @@ python scripts/build/build_exe.py --increment major
 ```
 
 **Output:** `dist/SCProfileViewer.exe`
-
-### 2. OCR-Enabled Build (For Template Developers)
-Includes PyTorch, EasyOCR, and OpenCV for creating new device templates.
-
-```bash
-# Build without version increment
-python scripts/build/build_exe_with_ocr.py
-
-# Build with version increment
-python scripts/build/build_exe_with_ocr.py --increment patch
-```
-
-**Output:** `dist/SCProfileViewer-WithOCR.exe`
 
 ### Version Increment Guidelines
 

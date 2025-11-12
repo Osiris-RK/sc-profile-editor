@@ -40,7 +40,9 @@ class ProfileParser:
             profile_name=profile_name,
             devices=devices,
             action_maps=action_maps,
-            categories=categories
+            categories=categories,
+            is_modified=False,
+            source_xml_path=self.xml_path
         )
 
     def get_profile_name(self) -> str:

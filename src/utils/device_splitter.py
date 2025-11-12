@@ -3,7 +3,116 @@ Device splitter utility for handling composite devices like VKB Gladiator + SEM
 """
 
 import re
-from typing import Optional, Tuple
+import json
+import os
+import sys
+import logging
+from typing import Optional, Tuple, Dict
+
+logger = logging.getLogger(__name__)
+
+# Cache for template registry
+_template_registry_cache: Optional[Dict] = None
+_templates_dir_cache: Optional[str] = None
+
+
+def _get_templates_dir() -> Optional[str]:
+    """Get the visual-templates directory path"""
+    global _templates_dir_cache
+
+    if _templates_dir_cache:
+        return _templates_dir_cache
+
+    try:
+        # Try to determine if running as PyInstaller bundle
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            # Running from source - go up to project root
+            current_file = os.path.abspath(__file__)
+            src_dir = os.path.dirname(os.path.dirname(current_file))
+            base_path = os.path.dirname(src_dir)
+
+        templates_dir = os.path.join(base_path, 'visual-templates')
+        if os.path.exists(templates_dir):
+            _templates_dir_cache = templates_dir
+            return templates_dir
+    except Exception as e:
+        logger.debug(f"Could not locate templates directory: {e}")
+
+    return None
+
+
+def _load_template_registry() -> Optional[Dict]:
+    """Load and cache the template registry"""
+    global _template_registry_cache
+
+    if _template_registry_cache is not None:
+        return _template_registry_cache
+
+    templates_dir = _get_templates_dir()
+    if not templates_dir:
+        return None
+
+    registry_path = os.path.join(templates_dir, 'template_registry.json')
+
+    if not os.path.exists(registry_path):
+        logger.debug(f"Template registry not found at {registry_path}")
+        return None
+
+    try:
+        with open(registry_path, 'r', encoding='utf-8') as f:
+            _template_registry_cache = json.load(f)
+            logger.debug(f"Loaded template registry with {len(_template_registry_cache.get('templates', []))} templates")
+            return _template_registry_cache
+    except Exception as e:
+        logger.warning(f"Error loading template registry: {e}")
+        return None
+
+
+def get_friendly_device_name(device_name: str) -> str:
+    """
+    Get friendly display name for a device based on template registry
+
+    Args:
+        device_name: Raw device name from SC profile (e.g., "F16 MFD 2")
+
+    Returns:
+        Friendly name from template registry or original name if no match
+    """
+    if not device_name:
+        return device_name
+
+    registry = _load_template_registry()
+    if not registry:
+        return device_name
+
+    device_name_lower = device_name.lower()
+
+    # Try to match against template patterns
+    for template in registry.get('templates', []):
+        # Skip deprecated templates
+        if template.get('deprecated', False):
+            continue
+
+        # Check device match patterns
+        for pattern in template.get('device_match_patterns', []):
+            if pattern.lower() in device_name_lower:
+                # Found a match - return the template's friendly name
+                friendly_name = template.get('name', device_name)
+
+                # Remove instance numbers from the device name (e.g., "F16 MFD 2" -> "F16 MFD")
+                # and check if we need to preserve the instance
+                instance_match = re.search(r'\s+(\d+)\s*$', device_name)
+                if instance_match:
+                    # Device has instance number - append it to friendly name
+                    instance = instance_match.group(1)
+                    return f"{friendly_name} {instance}"
+                else:
+                    return friendly_name
+
+    # No match found - return original
+    return device_name
 
 
 def is_vkb_with_sem(device_name: str) -> bool:
@@ -91,15 +200,18 @@ def get_device_for_input(device_name: str, input_code: str) -> str:
         input_code: Input code (e.g., "js1_button42")
 
     Returns:
-        Appropriate device name (may be split into component)
+        Appropriate device name (may be split into component, with friendly name applied)
     """
+    # First, handle composite devices (e.g., VKB with SEM)
     button_num = extract_button_number(input_code)
 
     if button_num is not None:
-        return split_device_by_button(device_name, button_num)
+        split_name = split_device_by_button(device_name, button_num)
+    elif is_vkb_with_sem(device_name):
+        # For non-button inputs (axes, hats, etc.), use base device
+        split_name = get_base_stick_name(device_name)
+    else:
+        split_name = device_name
 
-    # For non-button inputs (axes, hats, etc.), use base device
-    if is_vkb_with_sem(device_name):
-        return get_base_stick_name(device_name)
-
-    return device_name
+    # Apply friendly name from template registry
+    return get_friendly_device_name(split_name)

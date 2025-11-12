@@ -1,11 +1,44 @@
 # Changelog
 
-All notable changes to SC Profile Viewer will be documented in this file.
+All notable changes to SC Profile Editor will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+- **About tab** - New tab with project information, Osiris DevWorks placeholder, and acknowledgements:
+  - GurningBoose, Hawkwar, Nazgul-Five 'Maverick', Tichro 'BreakPoint', UntoldForce
+- **Expanded VKB PDF template library** - Added 19 new VKB device PDF templates:
+  - VKB Gladiator SCG (LH/RH, OTA-LH/OTA-RH variants)
+  - VKB Gunfighter SCG (LH/RH, OTA-LH/OTA-RH variants)
+  - VKB SEM-V variant
+  - VKB STECS throttle system (base unit, STEM, ATEM, SpaceThrottleGrip LH/RH)
+  - VKB THQ-V, THQ-WW2, THQ-V-WW2 variants
+
+### Changed
+- **UI Simplification** - Consolidated device graphics interface:
+  - Renamed "Device Graphics (Interactive)" to "Device View"
+  - Removed redundant "Device Graphics (SVG)" and "Device Graphics (PDF)" tabs
+  - Now uses single interactive PDF viewer for all device graphics
+- **Updated tab structure** - Three tabs total: Controls Table, Device View, About
+
+### Deprecated
+- **SVG/PNG template system** - Replaced with PDF-only system
+  - Moved deprecated files to `deprecated/` directory:
+    - `device_graphics.py` (SVG widget)
+    - `pdf_device_graphics_widget.py` (static PDF widget)
+    - `ocr_annotator.py` (OCR utilities)
+    - `svg_generator.py` (SVG generation)
+    - `detect_button_coordinates.py` (OCR-based coordinate detection)
+    - All `.png` and `_overlay.svg` template files
+- **OCR build configuration** - Removed build_exe_with_ocr.py (no longer needed)
+- **Cleaned template_registry.json** - Removed `image` and `overlay` keys (SVG/PNG references)
+
+### Technical
+- Updated all documentation (README.md, CLAUDE.md) to reflect PDF-only system
+- Simplified build process to single standard build script
 
 ## [0.3.0] - 2025-01-08
 
@@ -81,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-10-23
 
 ### Added
-- Initial release of SC Profile Viewer
+- Initial release of SC Profile Editor
 - Import and parse Star Citizen control profile XML files
 - Display control bindings in sortable, filterable table
 - Edit action labels with custom overrides

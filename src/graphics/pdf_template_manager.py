@@ -219,17 +219,34 @@ class PDFTemplateManager:
             if field_mapping:
                 # Template uses custom field names - need to map
                 button_mapping = field_mapping.get('button_mapping', {})
+                axis_mapping = field_mapping.get('axis_mapping', {})
 
                 for input_code, value in field_values.items():
-                    # Extract button number from input code (e.g., "js1_button5" -> 5)
                     import re
-                    match = re.match(r'js\d+_button(\d+)', input_code)
-                    if match:
-                        button_num = int(match.group(1))
+
+                    # Handle button inputs (e.g., "js1_button5" -> 5)
+                    button_match = re.match(r'js\d+_button(\d+)', input_code)
+                    if button_match:
+                        button_num = int(button_match.group(1))
 
                         # Find PDF field name for this button number
                         for pdf_name, btn_num in button_mapping.items():
                             if btn_num == button_num:
+                                # Try both _1 and _2 suffixes (for multi-device PDFs)
+                                pdf_field_values[f"{pdf_name}_1"] = value
+                                pdf_field_values[f"{pdf_name}_2"] = value
+                                # Also try without suffix
+                                pdf_field_values[pdf_name] = value
+
+                    # Handle axis inputs (e.g., "js1_x", "js1_y", "js1_rotz")
+                    axis_match = re.match(r'js\d+_(x|y|z|rotx|roty|rotz|slider|throttle|rudder)', input_code, re.IGNORECASE)
+                    if axis_match:
+                        axis_name = axis_match.group(1).lower()
+
+                        # Find PDF field name for this axis
+                        for pdf_name, mapped_axis in axis_mapping.items():
+                            mapped_axis_lower = mapped_axis.lower()
+                            if axis_name in mapped_axis_lower or mapped_axis_lower.endswith(axis_name):
                                 # Try both _1 and _2 suffixes (for multi-device PDFs)
                                 pdf_field_values[f"{pdf_name}_1"] = value
                                 pdf_field_values[f"{pdf_name}_2"] = value

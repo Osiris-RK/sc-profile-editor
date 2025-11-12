@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QMessageBox)
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
-from PyQt6.QtCore import Qt, pyqtSignal, QUrl, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QUrl, QTimer, QObject, pyqtSlot
 from PyQt6.QtWebChannel import QWebChannel
 
 # Add parent directory to path
@@ -22,14 +22,13 @@ from graphics.pdf_template_manager import PDFTemplateManager, PDFDeviceTemplate
 from models.profile_model import ControlProfile, Device
 from parser.label_generator import LabelGenerator
 from utils.device_joystick_mapper import DeviceJoystickMapper
+from utils.device_splitter import get_friendly_device_name
 
 logger = logging.getLogger(__name__)
 
 
 class PDFFieldBridge(QObject):
     """Bridge object for JavaScript <-> Qt communication"""
-
-    from PyQt6.QtCore import QObject, pyqtSlot
 
     # Signal emitted when a PDF field value changes
     field_changed = pyqtSignal(str, str)  # field_name, new_value
@@ -117,7 +116,9 @@ class WebEnginePDFWidget(QWidget):
         # Add devices that have PDF templates
         for device in profile.devices:
             if device.device_type == 'joystick':
-                device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
+                raw_device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
+                # Apply friendly name from template registry
+                device_name = get_friendly_device_name(raw_device_name)
 
                 # Try to find a PDF template for this device
                 template = self.pdf_manager.find_template(device.product_name or "")

@@ -33,12 +33,31 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from parser.xml_parser import ProfileParser
 from parser.label_generator import LabelGenerator
 from models.profile_model import ControlProfile
-from gui.device_graphics import DeviceGraphicsWidget
-from gui.pdf_device_graphics_widget import PDFDeviceGraphicsWidget
-from gui.webengine_pdf_widget import WebEnginePDFWidget
 from utils.settings import AppSettings
 from utils.version import get_version
 from utils.device_splitter import get_device_for_input
+
+# Try to import PDF widget - prefer QtPdf (native, lightweight) over WebEngine
+PDF_WIDGET_AVAILABLE = False
+PDF_WIDGET_CLASS = None
+
+try:
+    from gui.qtpdf_device_widget import QtPdfDeviceWidget
+    PDF_WIDGET_CLASS = QtPdfDeviceWidget
+    PDF_WIDGET_AVAILABLE = True
+    logger.info("Using QtPdf for device view (native Qt PDF viewer)")
+except ImportError as e:
+    logger.warning(f"QtPdf widget not available: {e}")
+    # Fallback to WebEngine if QtPdf not available
+    try:
+        from gui.webengine_pdf_widget import WebEnginePDFWidget
+        PDF_WIDGET_CLASS = WebEnginePDFWidget
+        PDF_WIDGET_AVAILABLE = True
+        logger.info("Using WebEngine for device view (Chromium-based)")
+    except ImportError as e2:
+        PDF_WIDGET_AVAILABLE = False
+        logger.warning(f"WebEngine also not available: {e2}")
+        logger.error("No PDF widget available - Device View will be disabled")
 
 
 class SelectAllDelegate(QStyledItemDelegate):
@@ -70,12 +89,12 @@ class SelectAllDelegate(QStyledItemDelegate):
 
 
 class MainWindow(QMainWindow):
-    """Main application window for SC Profile Viewer"""
+    """Main application window for SC Profile Editor"""
 
     def __init__(self):
         super().__init__()
         self.version = get_version()
-        self.setWindowTitle(f"Star Citizen Profile Viewer v{self.version}")
+        self.setWindowTitle(f"Star Citizen Profile Editor v{self.version}")
         self.setGeometry(100, 100, 1200, 800)
 
         # Initialize settings manager
@@ -109,7 +128,7 @@ class MainWindow(QMainWindow):
 
         # Header
         header_layout = QHBoxLayout()
-        title_label = QLabel(f"Star Citizen Profile Viewer v{self.version}")
+        title_label = QLabel(f"Star Citizen Profile Editor v{self.version}")
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; margin: 10px;")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
@@ -144,6 +163,14 @@ class MainWindow(QMainWindow):
         self.export_graphic_btn.clicked.connect(self.export_graphic)
         self.export_graphic_btn.setEnabled(False)
         header_layout.addWidget(self.export_graphic_btn)
+
+        # Save Profile button (for remapped controls)
+        self.save_profile_btn = QPushButton("💾 Save Profile")
+        self.save_profile_btn.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #2196F3; color: white;")
+        self.save_profile_btn.clicked.connect(self.save_profile)
+        self.save_profile_btn.setEnabled(False)
+        self.save_profile_btn.setVisible(False)  # Only show when profile is modified
+        header_layout.addWidget(self.save_profile_btn)
 
         # Help button (rightmost)
         help_btn = QPushButton("Help")
@@ -233,6 +260,10 @@ class MainWindow(QMainWindow):
         self.controls_table.itemChanged.connect(self.on_cell_edited)
         self.controls_table.itemDoubleClicked.connect(self.on_item_double_clicked)
 
+        # Enable context menu for remapping
+        self.controls_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.controls_table.customContextMenuRequested.connect(self.show_table_context_menu)
+
         # Set custom delegate for column 2 to handle text selection
         delegate = SelectAllDelegate(self.controls_table, self)
         self.controls_table.setItemDelegateForColumn(2, delegate)
@@ -252,21 +283,92 @@ class MainWindow(QMainWindow):
         table_layout.addWidget(splitter)
         self.tab_widget.addTab(table_tab, "Controls Table")
 
-        # Tab 2: Device Graphics View (SVG-based)
+        # Tab 2: Device View (PDF-based device visualization) - Optional
         templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "visual-templates")
-        self.graphics_widget = DeviceGraphicsWidget(templates_dir)
-        self.graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
-        self.tab_widget.addTab(self.graphics_widget, "Device Graphics (SVG)")
+        if PDF_WIDGET_AVAILABLE:
+            self.pdf_device_widget = PDF_WIDGET_CLASS(templates_dir)
+            self.pdf_device_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
+            self.tab_widget.addTab(self.pdf_device_widget, "Device View")
+        else:
+            self.pdf_device_widget = None
+            logger.warning("Device View tab disabled - no PDF widget available")
 
-        # Tab 3: PDF Device Graphics View (PDF-based with dialog editing)
-        self.pdf_graphics_widget = PDFDeviceGraphicsWidget(templates_dir)
-        self.pdf_graphics_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
-        self.tab_widget.addTab(self.pdf_graphics_widget, "Device Graphics (PDF)")
+        # Tab 3: About
+        about_tab = QWidget()
+        about_layout = QVBoxLayout()
+        about_tab.setLayout(about_layout)
 
-        # Tab 4: WebEngine PDF View (Interactive browser-like editing)
-        self.webengine_pdf_widget = WebEnginePDFWidget(templates_dir)
-        self.webengine_pdf_widget.export_available_changed.connect(self.export_graphic_btn.setEnabled)
-        self.tab_widget.addTab(self.webengine_pdf_widget, "Device Graphics (Interactive)")
+        # About content in a scrollable text browser
+        about_browser = QTextBrowser()
+        about_browser.setOpenExternalLinks(True)
+
+        about_html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    line-height: 1.6;
+                }}
+                h1 {{
+                    color: #2c3e50;
+                    border-bottom: 3px solid #3498db;
+                    padding-bottom: 10px;
+                }}
+                h2 {{
+                    color: #34495e;
+                    border-bottom: 2px solid #95a5a6;
+                    padding-bottom: 5px;
+                    margin-top: 30px;
+                }}
+                h3 {{
+                    color: #555;
+                    margin-top: 20px;
+                }}
+                p {{
+                    margin: 10px 0;
+                }}
+                ul {{
+                    margin-left: 20px;
+                }}
+                li {{
+                    margin: 5px 0;
+                }}
+                .placeholder {{
+                    color: #888;
+                    font-style: italic;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Star Citizen Profile Editor v{self.version}</h1>
+
+            <h2>About This Project</h2>
+            <p class="placeholder">
+                [This section will contain information about the project and Osiris DevWorks]
+            </p>
+
+            <h2>Acknowledgements</h2>
+            <p>
+                Special thanks to the following individuals for their valuable assistance
+                and contributions to this project:
+            </p>
+            <ul>
+                <li><strong>GurningBoose</strong></li>
+                <li><strong>Hawkwar</strong></li>
+                <li><strong>Nazgul-Five 'Maverick'</strong></li>
+                <li><strong>Tichro 'BreakPoint'</strong></li>
+                <li><strong>UntoldForce</strong></li>
+            </ul>
+        </body>
+        </html>
+        """
+
+        about_browser.setHtml(about_html)
+        about_layout.addWidget(about_browser)
+
+        self.tab_widget.addTab(about_tab, "About")
 
         # Connect tab change signal to sync device selection
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
@@ -485,10 +587,9 @@ class MainWindow(QMainWindow):
         # Apply filters to show the rows (important when loading a new profile)
         self.apply_filters()
 
-        # Load profile into graphics widgets
-        self.graphics_widget.load_profile(profile)
-        self.pdf_graphics_widget.load_profile(profile)
-        self.webengine_pdf_widget.load_profile(profile)
+        # Load profile into Device View widget
+        if self.pdf_device_widget:
+            self.pdf_device_widget.load_profile(profile)
 
     def populate_controls_table(self):
         """Populate the controls table with bindings"""
@@ -769,22 +870,143 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Filters cleared - showing all {self.controls_table.rowCount()} bindings")
 
     def on_tab_changed(self, index: int):
-        """Handle tab change - sync device selection when switching to graphics tabs"""
+        """Handle tab change - sync device selection when switching to Device View tab"""
         # Get the currently filtered device from the control table
         filtered_device = self.device_filter.currentText()
 
-        if index == 1:
-            # SVG Graphics tab
+        if index == 1 and self.pdf_device_widget:
+            # Device View tab
             if filtered_device and filtered_device != "All Devices":
-                self.graphics_widget.select_device_by_name(filtered_device)
-        elif index == 2:
-            # PDF Graphics tab (dialog-based)
-            if filtered_device and filtered_device != "All Devices":
-                self.pdf_graphics_widget.select_device_by_name(filtered_device)
-        elif index == 3:
-            # WebEngine PDF Graphics tab (interactive)
-            if filtered_device and filtered_device != "All Devices":
-                self.webengine_pdf_widget.select_device_by_name(filtered_device)
+                self.pdf_device_widget.select_device_by_name(filtered_device)
+
+    def show_table_context_menu(self, position):
+        """Show context menu for table row"""
+        # Get the item at the clicked position
+        item = self.controls_table.itemAt(position)
+        if not item:
+            return
+
+        # Get binding data from the item
+        binding_data = item.data(Qt.ItemDataRole.UserRole)
+        if not binding_data:
+            return
+
+        action_map_name, binding = binding_data
+
+        # Create context menu
+        from PyQt6.QtWidgets import QMenu
+        menu = QMenu(self)
+
+        # Add "Remap Button..." action
+        remap_action = menu.addAction("🎮 Remap Button...")
+        remap_action.triggered.connect(lambda: self.show_remap_dialog(binding))
+
+        # Add "Edit Label..." action
+        edit_label_action = menu.addAction("✏️ Edit Label...")
+        edit_label_action.triggered.connect(lambda: self.edit_label_from_context(binding))
+
+        # Show menu at cursor position
+        menu.exec(self.controls_table.viewport().mapToGlobal(position))
+
+    def show_remap_dialog(self, binding):
+        """Show the remapping dialog for a binding"""
+        if not self.current_profile:
+            return
+
+        from gui.remap_dialog import RemapDialog
+
+        dialog = RemapDialog(binding, self.current_profile, self)
+        dialog.binding_changed.connect(
+            lambda new_input, new_label, new_mode: self.on_binding_remapped(
+                binding, new_input, new_label, new_mode
+            )
+        )
+        dialog.exec()
+
+    def on_binding_remapped(self, binding, new_input_code: str, new_label: str, new_activation_mode: str):
+        """Handle binding changes from the remapping dialog"""
+        # Update binding's input code
+        binding.input_code = new_input_code
+
+        # Update activation mode
+        binding.activation_mode = new_activation_mode if new_activation_mode else None
+
+        # Update custom label
+        if new_label:
+            try:
+                from utils.label_overrides import get_override_manager
+                override_manager = get_override_manager()
+
+                # Get default label
+                default_label = LabelGenerator.generate_action_label(binding.action_name)
+
+                if new_label == default_label:
+                    # Remove custom override
+                    override_manager.remove_custom_override(binding.action_name)
+                    binding.custom_label = None
+                else:
+                    # Save custom override
+                    override_manager.set_custom_override(binding.action_name, new_label)
+                    binding.custom_label = new_label
+
+                override_manager.reload()
+
+            except Exception as e:
+                logger.error(f"Error updating label: {e}", exc_info=True)
+
+        # Mark profile as modified
+        if self.current_profile:
+            self.current_profile.mark_modified()
+
+        # Refresh UI
+        self.on_profile_modified()
+
+        logger.info(f"Remapped binding: {binding.action_name} to {new_input_code}")
+
+    def edit_label_from_context(self, binding):
+        """Edit label from context menu (simpler than full remap dialog)"""
+        from PyQt6.QtWidgets import QInputDialog
+
+        current_label = LabelGenerator.get_action_label(binding.action_name, binding)
+
+        new_label, ok = QInputDialog.getText(
+            self,
+            "Edit Control Label",
+            f"Edit label for {binding.action_name}:",
+            text=current_label
+        )
+
+        if ok and new_label != current_label:
+            try:
+                from utils.label_overrides import get_override_manager
+                override_manager = get_override_manager()
+
+                # Get default label
+                default_label = LabelGenerator.generate_action_label(binding.action_name)
+
+                if new_label == default_label or not new_label:
+                    # Remove custom override
+                    override_manager.remove_custom_override(binding.action_name)
+                    binding.custom_label = None
+                else:
+                    # Save custom override
+                    override_manager.set_custom_override(binding.action_name, new_label)
+                    binding.custom_label = new_label
+
+                override_manager.reload()
+
+                # Mark profile as modified (for label changes)
+                if self.current_profile:
+                    self.current_profile.mark_modified()
+
+                # Refresh UI
+                self.on_profile_modified()
+
+                logger.info(f"Updated label for {binding.action_name}: {new_label}")
+
+            except Exception as e:
+                logger.error(f"Error updating label: {e}", exc_info=True)
+                QMessageBox.warning(self, "Error", f"Failed to update label: {str(e)}")
 
     def on_item_double_clicked(self, item):
         """Handle double-click - prepare for editing"""
@@ -874,10 +1096,9 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Warning: Label restored but couldn't update override file: {str(e)}")
                 logger.error(f"Error removing label override: {e}", exc_info=True)
 
-            # Update graphics widgets
-            self.graphics_widget.load_profile(self.current_profile)
-            self.pdf_graphics_widget.load_profile(self.current_profile)
-            self.webengine_pdf_widget.load_profile(self.current_profile)
+            # Update Device View widget
+            if self.pdf_device_widget:
+                self.pdf_device_widget.load_profile(self.current_profile)
 
             # Force reload override manager cache and repopulate the table
             override_manager.reload()
@@ -904,10 +1125,9 @@ class MainWindow(QMainWindow):
             item.setText(new_label)
             self.controls_table.blockSignals(False)
 
-            # Update graphics widgets
-            self.graphics_widget.load_profile(self.current_profile)
-            self.pdf_graphics_widget.load_profile(self.current_profile)
-            self.webengine_pdf_widget.load_profile(self.current_profile)
+            # Update Device View widget
+            if self.pdf_device_widget:
+                self.pdf_device_widget.load_profile(self.current_profile)
 
             self.statusBar().showMessage(f"Custom label saved: '{binding.action_name}' → '{new_label}'")
             logger.info(f"Saved custom override for '{binding.action_name}': '{new_label}'")
@@ -1145,27 +1365,129 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Word export failed")
 
     def export_graphic(self):
-        """Export device graphic - delegate to active graphics widget"""
-        # Check which graphics tab is active and call the appropriate widget
+        """Export device graphic - delegate to Device View widget"""
+        # Check if Device View tab is active
         current_tab = self.tab_widget.currentIndex()
-        if current_tab == 1:
-            # SVG graphics tab
-            self.graphics_widget.export_graphic()
-        elif current_tab == 2:
-            # PDF graphics tab (dialog-based)
-            self.pdf_graphics_widget.export_graphic()
-        elif current_tab == 3:
-            # WebEngine PDF graphics tab (interactive)
-            self.webengine_pdf_widget.export_graphic()
+        if current_tab == 1 and self.pdf_device_widget:
+            # Device View tab
+            self.pdf_device_widget.export_graphic()
         else:
-            # Not on a graphics tab
-            QMessageBox.warning(self, "Export Graphic", "Please switch to a Device Graphics tab first.")
+            # Not on Device View tab
+            QMessageBox.warning(self, "Export Graphic", "Please switch to the Device View tab first.")
+
+    def on_profile_modified(self):
+        """Handle profile modification - update UI to reflect changes"""
+        if not self.current_profile:
+            return
+
+        # Update window title with modified indicator
+        base_title = f"Star Citizen Profile Editor v{self.version}"
+        if self.current_profile.is_modified:
+            self.setWindowTitle(f"{base_title} - {self.current_profile.profile_name} *")
+            # Show and enable save button
+            self.save_profile_btn.setVisible(True)
+            self.save_profile_btn.setEnabled(True)
+        else:
+            self.setWindowTitle(f"{base_title} - {self.current_profile.profile_name}")
+            # Hide save button
+            self.save_profile_btn.setVisible(False)
+
+        # Refresh the controls table
+        self.populate_controls_table()
+        self.apply_filters()
+
+        # Refresh device view if active
+        if self.pdf_device_widget and self.pdf_device_widget.current_device:
+            self.pdf_device_widget.load_device_pdf()
+
+    def save_profile(self):
+        """Save the modified profile to XML"""
+        if not self.current_profile or not self.current_profile.is_modified:
+            return
+
+        # Get output path - use default naming with _scpe suffix
+        output_path = None
+
+        if self.current_profile.source_xml_path:
+            # Generate default filename with _scpe suffix
+            source_path = self.current_profile.source_xml_path
+            base_name = os.path.splitext(os.path.basename(source_path))[0]
+
+            # Remove _exported suffix if present
+            if base_name.endswith('_exported'):
+                base_name = base_name[:-9]
+
+            suggested_name = f"{base_name}_scpe.xml"
+            suggested_dir = os.path.dirname(source_path)
+            default_path = os.path.join(suggested_dir, suggested_name)
+        else:
+            # No source path, use profile name
+            suggested_name = f"{self.current_profile.profile_name}_scpe.xml"
+            default_path = suggested_name
+
+        # Show save dialog with default name
+        output_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Profile",
+            default_path,
+            "XML Files (*.xml);;All Files (*)"
+        )
+
+        if not output_path:
+            return
+
+        # Export profile to XML
+        try:
+            from exporters.xml_exporter import export_profile
+
+            # Use original source path if available, otherwise create from scratch
+            source_path = self.current_profile.source_xml_path
+
+            if source_path and os.path.exists(source_path):
+                success = export_profile(self.current_profile, source_path, output_path)
+            else:
+                # Create new profile from scratch
+                from exporters.xml_exporter import XMLExporter
+                success = XMLExporter.create_new_profile(self.current_profile, output_path)
+
+            if success:
+                # Mark as saved
+                self.current_profile.mark_saved()
+                self.current_profile.source_xml_path = output_path
+
+                # Update UI
+                self.on_profile_modified()
+
+                # Show success message
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Profile saved successfully!\n\nSaved to:\n{output_path}"
+                )
+
+                self.statusBar().showMessage(f"Profile saved: {os.path.basename(output_path)}")
+                logger.info(f"Saved profile to: {output_path}")
+
+            else:
+                QMessageBox.critical(
+                    self,
+                    "Save Error",
+                    "Failed to save profile. Check the log for details."
+                )
+
+        except Exception as e:
+            logger.error(f"Error saving profile: {e}", exc_info=True)
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                f"Failed to save profile:\n{str(e)}"
+            )
 
     def show_help(self):
         """Show the user guide in a dialog"""
         # Create help dialog
         help_dialog = QDialog(self)
-        help_dialog.setWindowTitle(f"User Guide - Star Citizen Profile Viewer v{self.version}")
+        help_dialog.setWindowTitle(f"User Guide - Star Citizen Profile Editor v{self.version}")
         help_dialog.setGeometry(100, 100, 900, 700)
 
         # Layout

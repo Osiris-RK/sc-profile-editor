@@ -1,4 +1,4 @@
-# Star Citizen Profile Viewer - User Guide
+# Star Citizen Profile Editor - User Guide
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -15,7 +15,7 @@
 
 ## Introduction
 
-The Star Citizen Profile Viewer is a tool that helps you view, customize, and export your Star Citizen control profiles in a human-readable format. It can generate visual diagrams of your controller layouts and export your bindings to various formats.
+The Star Citizen Profile Editor is a tool that helps you edit, customize, and export your Star Citizen control profiles in a human-readable format. It can generate visual diagrams of your controller layouts and export your bindings to various formats.
 
 ---
 
@@ -405,7 +405,7 @@ For issues, feature requests, or contributions:
 
 ## Version Information
 
-This guide is for Star Citizen Profile Viewer v0.1.0
+This guide is for Star Citizen Profile Editor v0.1.0
 
 **Features in v0.1.0:**
 - Custom label override system

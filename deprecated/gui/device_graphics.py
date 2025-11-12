@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QPushButton, QGraphicsView, QGraphicsScene,
                               QGraphicsPixmapItem, QGraphicsTextItem, QGraphicsRectItem,
                               QFileDialog, QMessageBox)
-from PyQt6.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QBrush, QImage
+from PyQt6.QtGui import QPixmap, QPainter, QFont, QColor, QPen, QBrush, QImage, QPdfWriter, QPageLayout, QPageSize
 from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
 
 # Add parent directory to path
@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from graphics.template_manager import TemplateManager, DeviceTemplate
 from models.profile_model import ControlProfile, Device, ActionBinding
 from parser.label_generator import LabelGenerator
-from utils.device_splitter import is_vkb_with_sem, get_base_stick_name
+from utils.device_splitter import is_vkb_with_sem, get_base_stick_name, get_friendly_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -94,12 +94,14 @@ class DeviceGraphicsWidget(QWidget):
         # Add devices that have templates
         for device in profile.devices:
             if device.device_type == 'joystick':  # Focus on joysticks for now
-                device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
+                raw_device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
 
                 # Check if this is a VKB device with SEM module
-                if is_vkb_with_sem(device_name):
+                if is_vkb_with_sem(raw_device_name):
                     # Add two entries: base stick and SEM module
-                    base_stick_name = get_base_stick_name(device_name)
+                    base_stick_name = get_base_stick_name(raw_device_name)
+                    # Apply friendly name to base stick
+                    base_stick_friendly = get_friendly_device_name(base_stick_name)
 
                     # Check if templates exist for both
                     base_template = self.template_manager.find_template(base_stick_name)
@@ -107,9 +109,9 @@ class DeviceGraphicsWidget(QWidget):
 
                     if base_template:
                         # Store device and base stick name in item data as tuple
-                        self.device_combo.addItem(f"{base_stick_name} (Template available)", (device, base_stick_name))
+                        self.device_combo.addItem(f"{base_stick_friendly} (Template available)", (device, base_stick_name))
                     else:
-                        self.device_combo.addItem(f"{base_stick_name} (No template)", (device, base_stick_name))
+                        self.device_combo.addItem(f"{base_stick_friendly} (No template)", (device, base_stick_name))
 
                     if sem_template:
                         # Store device and "VKB SEM" name in item data as tuple
@@ -118,13 +120,16 @@ class DeviceGraphicsWidget(QWidget):
                         self.device_combo.addItem(f"VKB SEM (No template)", (device, "VKB SEM"))
                 else:
                     # Regular device (not split)
+                    # Apply friendly name from template registry
+                    device_name = get_friendly_device_name(raw_device_name)
+
                     template = self.template_manager.find_template(device.product_name or "")
 
                     if template:
-                        # Store device and device name as tuple for consistency
-                        self.device_combo.addItem(f"{device_name} (Template available)", (device, device_name))
+                        # Store device and raw device name (not friendly) as tuple for template matching
+                        self.device_combo.addItem(f"{device_name} (Template available)", (device, raw_device_name))
                     else:
-                        self.device_combo.addItem(f"{device_name} (No template)", (device, device_name))
+                        self.device_combo.addItem(f"{device_name} (No template)", (device, raw_device_name))
 
         if self.device_combo.count() == 0:
             self.status_label.setText("No devices with templates found")
@@ -769,44 +774,51 @@ class DeviceGraphicsWidget(QWidget):
         image.save(file_path, "PNG")
 
     def export_to_pdf(self, file_path: str):
-        """Export scene to PDF"""
-        from reportlab.lib.pagesizes import letter, landscape
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.utils import ImageReader
+        """Export scene to PDF using vector rendering for sharp text"""
+        # Create PDF writer
+        writer = QPdfWriter(file_path)
+        writer.setPageSize(QPageSize.PageSizeId.Letter)
+        writer.setPageOrientation(QPageLayout.Orientation.Landscape)
+        writer.setResolution(300)  # High resolution for quality
 
-        # First export to PNG, then embed in PDF
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-            tmp_path = tmp.name
-            self.export_to_png(tmp_path)
+        # Get page size in device pixels
+        page_rect = writer.pageLayout().fullRectPixels(writer.resolution())
 
-        # Create PDF
-        c = canvas.Canvas(file_path, pagesize=landscape(letter))
-        page_width, page_height = landscape(letter)
+        # Get scene bounding rect
+        scene_rect = self.scene.sceneRect()
+
+        # Calculate scaling to fit page with margins
+        margin = 50  # pixels at 300 DPI
+        title_space = 80  # Space for title
+        available_width = page_rect.width() - (2 * margin)
+        available_height = page_rect.height() - (2 * margin) - title_space
+
+        scale = min(available_width / scene_rect.width(),
+                   available_height / scene_rect.height())
+
+        # Calculate centered position
+        scaled_width = scene_rect.width() * scale
+        scaled_height = scene_rect.height() * scale
+        x = (page_rect.width() - scaled_width) / 2
+        y = margin + title_space
+
+        # Create painter and render
+        painter = QPainter(writer)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
         # Add title
-        c.setFont("Helvetica-Bold", 16)
+        painter.setFont(QFont("Arial", 16, QFont.Weight.Bold))
         device_name = self.current_device.product_name or "Device"
-        c.drawString(50, page_height - 50, f"{device_name} - Control Layout")
+        painter.drawText(QRectF(margin, margin, page_rect.width() - 2*margin, title_space),
+                        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                        f"{device_name} - Control Layout")
 
-        # Add image
-        img = ImageReader(tmp_path)
-        img_width, img_height = img.getSize()
+        # Set up transformation for scene rendering
+        painter.translate(x, y)
+        painter.scale(scale, scale)
 
-        # Calculate scaling to fit page
-        max_width = page_width - 100
-        max_height = page_height - 150
-        scale = min(max_width / img_width, max_height / img_height)
-
-        scaled_width = img_width * scale
-        scaled_height = img_height * scale
-
-        x = (page_width - scaled_width) / 2
-        y = (page_height - scaled_height - 100)
-
-        c.drawImage(tmp_path, x, y, width=scaled_width, height=scaled_height)
-
-        c.save()
-
-        # Clean up temp file
-        os.unlink(tmp_path)
+        # Render scene with vector graphics
+        self.scene.render(painter)
+        painter.end()

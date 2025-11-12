@@ -1,4 +1,4 @@
-# File Locations - SC Profile Viewer
+# File Locations - SC Profile Editor
 
 This document explains where different files are stored when running the application.
 
@@ -91,7 +91,7 @@ To backup your custom labels:
 
 To restore:
 1. Copy the file back to `%APPDATA%\SCProfileViewer\`
-2. Restart SC Profile Viewer
+2. Restart SC Profile Editor
 
 ---
 
