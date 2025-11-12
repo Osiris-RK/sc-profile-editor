@@ -1,0 +1,22 @@
+{
+  "comment": "Button and axis mapping for vkb_thq_v",
+  "device_columns": {
+    "_1": "First device (left column or single device)",
+    "_2": "Second device (right column or dual setup)"
+  },
+  "button_mapping": {
+    "ABUT_A1": "TODO_BUTTON_1",
+    "ABUT_A2": "TODO_BUTTON_2",
+    "ABUT_A3": "TODO_BUTTON_3",
+    "ABUT_A4": "TODO_BUTTON_4",
+    "BBUT_B1": "TODO_BUTTON_5",
+    "BBUT_B2": "TODO_BUTTON_6",
+    "CBUT_C1": "TODO_BUTTON_7",
+    "CBUT_C2": "TODO_BUTTON_8"
+  },
+  "axis_mapping": {
+    "AX_C": "TODO_AXIS_UNKNOWN",
+    "AX_L": "TODO_AXIS_UNKNOWN",
+    "AX_R": "TODO_AXIS_UNKNOWN"
+  }
+}

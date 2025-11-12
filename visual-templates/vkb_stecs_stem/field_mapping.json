@@ -1,0 +1,37 @@
+{
+  "comment": "Button and axis mapping for vkb_stecs_stem",
+  "device_columns": {
+    "_1": "First device (left column or single device)",
+    "_2": "Second device (right column or dual setup)"
+  },
+  "button_mapping": {
+    "A1": "TODO_BUTTON_1",
+    "A2": "TODO_BUTTON_2",
+    "B1": "TODO_BUTTON_3",
+    "B2": "TODO_BUTTON_4",
+    "B3": "TODO_BUTTON_5",
+    "B4": "TODO_BUTTON_6",
+    "B5": "TODO_BUTTON_7",
+    "C1": "TODO_BUTTON_8",
+    "EN1_CCW": "TODO_BUTTON_9",
+    "EN1_CW": "TODO_BUTTON_10",
+    "EN1_PUSH": "TODO_BUTTON_11",
+    "EN2_CCW": "TODO_BUTTON_12",
+    "EN2_CW": "TODO_BUTTON_13",
+    "EN2_PUSH": "TODO_BUTTON_14",
+    "LDG_DN": "TODO_BUTTON_15",
+    "LDG_NEU": "TODO_BUTTON_16",
+    "LDG_UP": "TODO_BUTTON_17",
+    "RFT_A": "TODO_BUTTON_18",
+    "RFT_B": "TODO_BUTTON_19",
+    "SW1_BUT": "TODO_BUTTON_20",
+    "SW1_DN": "TODO_BUTTON_21",
+    "SW1_UP": "TODO_BUTTON_22",
+    "SW2_BUT": "TODO_BUTTON_23",
+    "SW2_DN": "TODO_BUTTON_24",
+    "SW2_UP": "TODO_BUTTON_25"
+  },
+  "axis_mapping": {
+    "AX_lever": "TODO_AXIS_UNKNOWN"
+  }
+}

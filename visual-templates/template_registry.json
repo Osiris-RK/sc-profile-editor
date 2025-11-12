@@ -18,40 +18,19 @@
       "notes": "Test template for PDF development - 10 buttons, 2 axes, 1 hat"
     },
     {
-      "id": "vkb_gladiator_evo_right",
-      "name": "VKB Gladiator EVO (Right)",
-      "device_match_patterns": [
-        "VKBsim Gladiator EVO R",
-        "Gladiator EVO R"
-      ],
-      "type": "joystick",
-      "manufacturer": "VKB",
-      "buttons": {},
-      "button_range": [1, 40]
-    },
-    {
-      "id": "vkb_gladiator_evo_left",
-      "name": "VKB Gladiator EVO (Left)",
-      "device_match_patterns": [
-        "VKBsim Gladiator EVO L",
-        "Gladiator EVO L"
-      ],
-      "type": "joystick",
-      "manufacturer": "VKB",
-      "buttons": {},
-      "button_range": [1, 40]
-    },
-    {
       "id": "vkb_gladiator_scg_rh",
       "name": "VKB Gladiator SCG (Right)",
       "pdf": "vkb_gladiator_scg_rh/VKB-Gladiator-SCG-RH-v1.0.pdf",
       "device_match_patterns": [
         "VKBsim Gladiator SCG R",
         "Gladiator SCG R",
-        "VKB Gladiator SCG Right"
+        "VKB Gladiator SCG Right",
+        "VKBsim Gladiator EVO R",
+        "Gladiator EVO R"
       ],
       "type": "joystick",
-      "manufacturer": "VKB"
+      "manufacturer": "VKB",
+      "notes": "SCG grip - standard right hand configuration"
     },
     {
       "id": "vkb_gladiator_scg_lh",
@@ -60,10 +39,15 @@
       "device_match_patterns": [
         "VKBsim Gladiator SCG L",
         "Gladiator SCG L",
-        "VKB Gladiator SCG Left"
+        "VKB Gladiator SCG Left",
+        "VKBsim Gladiator SCG L SEM",
+        "VKBsim Gladiator EVO L",
+        "Gladiator EVO L",
+        "VKBsim Gladiator EVO L SEM"
       ],
       "type": "joystick",
-      "manufacturer": "VKB"
+      "manufacturer": "VKB",
+      "notes": "SCG grip - standard left hand configuration (no OTA). Matches with or without SEM module."
     },
     {
       "id": "vkb_gladiator_scg_ota_rh",
@@ -72,11 +56,15 @@
       "device_match_patterns": [
         "VKBsim Gladiator SCG OTA R",
         "Gladiator SCG OTA R",
-        "VKB Gladiator SCG OTA Right"
+        "VKB Gladiator SCG OTA Right",
+        "VKBsim Gladiator EVO OTA R",
+        "Gladiator EVO OTA R",
+        "VKBsim Gladiator EVO R",
+        "Gladiator EVO R"
       ],
       "type": "joystick",
       "manufacturer": "VKB",
-      "notes": "SCG with Omni Throttle Adapter"
+      "notes": "SCG with Omni Throttle Adapter - right hand. Also matches EVO bases."
     },
     {
       "id": "vkb_gladiator_scg_ota_lh",
@@ -85,11 +73,16 @@
       "device_match_patterns": [
         "VKBsim Gladiator SCG OTA L",
         "Gladiator SCG OTA L",
-        "VKB Gladiator SCG OTA Left"
+        "VKB Gladiator SCG OTA Left",
+        "VKBsim Gladiator EVO OTA L",
+        "Gladiator EVO OTA L",
+        "VKBsim Gladiator EVO L",
+        "Gladiator EVO L",
+        "VKBsim Gladiator EVO L SEM"
       ],
       "type": "joystick",
       "manufacturer": "VKB",
-      "notes": "SCG with Omni Throttle Adapter"
+      "notes": "SCG with Omni Throttle Adapter. EVO bases typically use OTA-capable grips. Matches with or without SEM module."
     },
     {
       "id": "vkb_sem",
@@ -101,9 +94,8 @@
       ],
       "type": "module",
       "manufacturer": "VKB",
-      "buttons": {},
-      "button_range": [41, 64],
-      "notes": "Space Extension Module - attaches to Gladiator sticks"
+      "button_range": [41, 78],
+      "notes": "Space Extension Module - attaches to Gladiator sticks. Buttons 41-78."
     },
     {
       "id": "vkb_sem_v",
@@ -146,7 +138,7 @@
     },
     {
       "id": "vkb_fsm_ga",
-      "name": "VKB FSM-GA (F16 MFD)",
+      "name": "VKB FSM-GA",
       "pdf": "vkb_fsm_ga/VKB-FSM-GA-v1.0.pdf",
       "device_match_patterns": [
         "F16 MFD",

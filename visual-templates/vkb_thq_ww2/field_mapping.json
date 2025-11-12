@@ -1,0 +1,29 @@
+{
+  "comment": "Button and axis mapping for vkb_thq_ww2",
+  "device_columns": {
+    "_1": "First device (left column or single device)",
+    "_2": "Second device (right column or dual setup)"
+  },
+  "button_mapping": {
+    "A2_A": "TODO_BUTTON_1",
+    "ABUT_A1": "TODO_BUTTON_2",
+    "ABUT_A2": "TODO_BUTTON_3",
+    "ABUT_A3": "TODO_BUTTON_4",
+    "ABUT_A4": "TODO_BUTTON_5",
+    "BBUT_B1": "TODO_BUTTON_6",
+    "BBUT_B2": "TODO_BUTTON_7",
+    "CBUT_C1": "TODO_BUTTON_8",
+    "CBUT_C2": "TODO_BUTTON_9",
+    "WW2_ButBlack": "TODO_BUTTON_10",
+    "WW2_ButRed": "TODO_BUTTON_11",
+    "WW2_Front_Left": "TODO_BUTTON_12",
+    "WW2_Front_Right": "TODO_BUTTON_13",
+    "WW2_Rocker_Down": "TODO_BUTTON_14",
+    "WW2_Rocker_Up": "TODO_BUTTON_15"
+  },
+  "axis_mapping": {
+    "AX_C": "TODO_AXIS_UNKNOWN",
+    "AX_L": "TODO_AXIS_UNKNOWN",
+    "AX_R": "TODO_AXIS_UNKNOWN"
+  }
+}
