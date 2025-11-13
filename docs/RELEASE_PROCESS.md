@@ -190,6 +190,8 @@ See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-editor/blob/main/docs
 ---
 
 **First time using SC Profile Editor?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-editor/blob/main/README.md) to get started!
+
+**Need help?** Join our [Discord community](https://discord.gg/NRnFJCjZke) for support and discussions.
 ```
 
 ## Version Numbering
