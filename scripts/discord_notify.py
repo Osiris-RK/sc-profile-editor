@@ -3,7 +3,7 @@ Discord Release Notification Script
 
 Posts release announcements to Discord via webhook.
 Usage: python scripts/discord_notify.py <version> <release_url>
-Example: python scripts/discord_notify.py v0.2.1 https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/v0.2.1
+Example: python scripts/discord_notify.py v0.4.0 https://github.com/Osiris-RK/sc-profile-editor/releases/tag/v0.4.0
 """
 
 import os
@@ -24,7 +24,7 @@ WEBHOOK_URL = os.getenv("DISCORD_RELEASE_WEBHOOK_URL")
 
 def parse_changelog_for_version(version: str) -> dict:
     """Parse CHANGELOG.md to extract changes for the given version."""
-    changelog_path = project_root / "CHANGELOG.md"
+    changelog_path = project_root / "docs" / "CHANGELOG.md"
 
     if not changelog_path.exists():
         return {"added": [], "changed": [], "fixed": []}
@@ -102,15 +102,15 @@ def create_embed(version: str, release_url: str) -> dict:
     description_parts.append(f"\n📥 **[Download Now]({release_url})**")
 
     embed = {
-        "title": f"SC Profile Viewer {version}",
+        "title": f"SC Profile Editor {version}",
         "description": "\n".join(description_parts),
         "color": 0x00A8E8,  # Star Citizen blue
         "url": release_url,
         "footer": {
-            "text": "SC Profile Viewer"
+            "text": "SC Profile Editor"
         },
         "thumbnail": {
-            "url": "https://raw.githubusercontent.com/Osiris-RK/sc-profile-viewer/main/assets/icon.png"
+            "url": "https://raw.githubusercontent.com/Osiris-RK/sc-profile-editor/main/assets/icon.png"
         }
     }
 
@@ -129,7 +129,7 @@ def send_discord_notification(version: str, release_url: str) -> bool:
     payload = {
         "content": "@everyone",
         "embeds": [embed],
-        "username": "SC Profile Viewer Releases",
+        "username": "SC Profile Editor Releases",
         "allowed_mentions": {
             "parse": ["everyone"]
         }
@@ -167,7 +167,7 @@ def send_discord_notification(version: str, release_url: str) -> bool:
 def main():
     if len(sys.argv) != 3:
         print("Usage: python scripts/discord_notify.py <version> <release_url>")
-        print("Example: python scripts/discord_notify.py v0.2.1 https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/v0.2.1")
+        print("Example: python scripts/discord_notify.py v0.4.0 https://github.com/Osiris-RK/sc-profile-editor/releases/tag/v0.4.0")
         sys.exit(1)
 
     version = sys.argv[1]
