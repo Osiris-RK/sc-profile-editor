@@ -242,6 +242,7 @@ See [RELEASE_PROCESS.md](RELEASE_PROCESS.md) for the complete release workflow.
 
 - **README.md** - End-user documentation and guide (in-app Help)
 - **docs/CHANGELOG.md** - Version history and changes
+- **docs/ROADMAP.md** - Planned releases and device support roadmap
 - **docs/CLAUDE.md** - Project context and AI assistant instructions
 - **docs/DEVELOPMENT.md** - This file (developer guide)
 - **docs/RELEASE_PROCESS.md** - Release workflow and checklist

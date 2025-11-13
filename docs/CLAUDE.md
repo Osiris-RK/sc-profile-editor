@@ -181,6 +181,7 @@ python scripts/build/build_exe.py --increment patch
 - **VERSION.TXT** - Current version number
 - **README.md** - End-user documentation and user guide (displayed in app)
 - **docs/CHANGELOG.md** - Version history and release notes
+- **docs/ROADMAP.md** - Planned releases and device support roadmap
 - **docs/DEVELOPMENT.md** - Developer documentation and build instructions
 - **docs/CLAUDE.md** - Project context and AI assistant instructions
 - **docs/FILE_LOCATIONS.md** - File storage documentation
