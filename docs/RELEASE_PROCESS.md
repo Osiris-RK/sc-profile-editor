@@ -191,7 +191,9 @@ See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-editor/blob/main/docs
 
 **First time using SC Profile Editor?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-editor/blob/main/README.md) to get started!
 
-**Need help?** Join our [Discord community](https://discord.gg/NRnFJCjZke) for support and discussions.
+**Need help?** Join our [Discord community](https://discord.gg/BNzRegKZ7k) for support and discussions.
+
+**Support this project:** [PayPal](https://paypal.me/RighteousKill) | [Venmo](https://venmo.com/u/Amr-Abouelleil)
 ```
 
 ## Version Numbering
