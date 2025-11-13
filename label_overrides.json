@@ -57,6 +57,8 @@
   "v_target_attacker": "Target Attacker",
   "v_view_cycle_internal": "Cycle Camera",
   "v_view_look_behind": "Look Behind",
+  "v_view_yaw_left": "Look Left",
+  "v_view_yaw_right": "Look Right",
   "v_view_zoom_in": "Zoom In",
   "v_view_zoom_out": "Zoom Out",
   "v_hud_open_comms": "Open Comms",
@@ -70,5 +72,7 @@
   "v_invoke_melee_quick": "Melee",
   "v_invoke_flashlight": "Flashlight",
   "v_toggle_eva_magnetboots": "Mag Boots",
-  "v_toggle_mining_mode": "Mining Mode"
+  "v_toggle_mining_mode": "Mining Mode",
+  "gp_rotatepitch": "Pitch",
+  "gp_rotateyaw": "Yaw"
 }

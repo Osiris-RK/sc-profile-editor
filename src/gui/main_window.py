@@ -372,61 +372,60 @@ class MainWindow(QMainWindow):
         # Connect tab change signal to sync device selection
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
 
-        # Footer with PayPal donation and Discord link
+        # Footer with Osiris DevWorks (left) and PayPal (right)
         footer_layout = QHBoxLayout()
-        footer_layout.addStretch()
 
-        # Discord "Join Today" button
-        self.discord_button = QLabel()
-        discord_image_path = get_resource_path(os.path.join("assets", "join_today.png"))
+        # Osiris DevWorks button (left side)
+        self.osiris_button = QLabel()
+        osiris_image_path = get_resource_path(os.path.join("assets", "osiris-devworks.png"))
 
-        # Try to load Discord image, fall back to text if not found
-        if os.path.exists(discord_image_path):
-            discord_pixmap = QPixmap(discord_image_path)
-            # Scale to reasonable size (max height 30px)
-            if discord_pixmap.height() > 30:
-                discord_pixmap = discord_pixmap.scaledToHeight(30, Qt.TransformationMode.SmoothTransformation)
-            self.discord_button.setPixmap(discord_pixmap)
+        # Try to load Osiris image, fall back to text if not found
+        if os.path.exists(osiris_image_path):
+            pixmap = QPixmap(osiris_image_path)
+            # Scale to reasonable size (max height 40px to accommodate the logo design)
+            if pixmap.height() > 40:
+                pixmap = pixmap.scaledToHeight(40, Qt.TransformationMode.SmoothTransformation)
+            self.osiris_button.setPixmap(pixmap)
         else:
             # Fallback to styled text button
-            self.discord_button.setText("Join Discord")
-            self.discord_button.setStyleSheet("""
+            self.osiris_button.setText("Osiris DevWorks")
+            self.osiris_button.setStyleSheet("""
                 QLabel {
-                    background-color: #5865F2;
-                    color: white;
+                    background-color: #1a1f2e;
+                    color: #c9a961;
                     padding: 8px 16px;
                     border-radius: 4px;
                     font-size: 12px;
                     font-weight: bold;
                 }
                 QLabel:hover {
-                    background-color: #4752C4;
+                    background-color: #242938;
                 }
             """)
 
-        self.discord_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.discord_button.mousePressEvent = self.open_discord_link
-        footer_layout.addWidget(self.discord_button)
+        self.osiris_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.osiris_button.mousePressEvent = self.open_discord_link
+        footer_layout.addWidget(self.osiris_button)
 
-        # Spacer between buttons
-        footer_layout.addSpacing(15)
+        # Stretch to push donation buttons to the right
+        footer_layout.addStretch()
 
-        # PayPal donation label
+        # Donation label
         donation_label = QLabel("Support this project:")
         donation_label.setStyleSheet("font-size: 12px; color: #666; margin-right: 5px;")
         footer_layout.addWidget(donation_label)
 
-        # PayPal button (clickable label)
+        # PayPal button (right side)
         self.paypal_button = QLabel()
         paypal_image_path = get_resource_path(os.path.join("assets", "paypal.png"))
 
         # Try to load PayPal image, fall back to text if not found
         if os.path.exists(paypal_image_path):
-            pixmap = QPixmap(paypal_image_path)
-            # Scale to reasonable size (max height 30px)
-            if pixmap.height() > 30:
-                pixmap = pixmap.scaledToHeight(30, Qt.TransformationMode.SmoothTransformation)
-            self.paypal_button.setPixmap(pixmap)
+            paypal_pixmap = QPixmap(paypal_image_path)
+            # Scale to match Osiris button (max height 40px)
+            if paypal_pixmap.height() > 40:
+                paypal_pixmap = paypal_pixmap.scaledToHeight(40, Qt.TransformationMode.SmoothTransformation)
+            self.paypal_button.setPixmap(paypal_pixmap)
         else:
             # Fallback to styled text button
             self.paypal_button.setText("Donate via PayPal")
@@ -448,7 +447,41 @@ class MainWindow(QMainWindow):
         self.paypal_button.mousePressEvent = self.open_paypal_donation
         footer_layout.addWidget(self.paypal_button)
 
-        footer_layout.addStretch()
+        # Spacer between PayPal and Venmo
+        footer_layout.addSpacing(10)
+
+        # Venmo button (right side)
+        self.venmo_button = QLabel()
+        venmo_image_path = get_resource_path(os.path.join("assets", "venmo.png"))
+
+        # Try to load Venmo image, fall back to text button
+        if os.path.exists(venmo_image_path):
+            venmo_pixmap = QPixmap(venmo_image_path)
+            # Scale to match Osiris button (max height 40px)
+            if venmo_pixmap.height() > 40:
+                venmo_pixmap = venmo_pixmap.scaledToHeight(40, Qt.TransformationMode.SmoothTransformation)
+            self.venmo_button.setPixmap(venmo_pixmap)
+        else:
+            # Fallback to styled text button
+            self.venmo_button.setText("Venmo")
+            self.venmo_button.setStyleSheet("""
+                QLabel {
+                    background-color: #008CFF;
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                QLabel:hover {
+                    background-color: #0074D9;
+                }
+            """)
+
+        self.venmo_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.venmo_button.mousePressEvent = self.open_venmo_donation
+        footer_layout.addWidget(self.venmo_button)
+
         main_layout.addLayout(footer_layout)
 
         # Status bar
@@ -1651,15 +1684,20 @@ class MainWindow(QMainWindow):
 
         return text
 
+    def open_discord_link(self, event):
+        """Open Discord invite link in browser"""
+        discord_url = "https://discord.gg/BNzRegKZ7k"
+        QDesktopServices.openUrl(QUrl(discord_url))
+
     def open_paypal_donation(self, event):
         """Open PayPal donation link in browser"""
         paypal_url = "https://paypal.me/RighteousKill"
         QDesktopServices.openUrl(QUrl(paypal_url))
 
-    def open_discord_link(self, event):
-        """Open Discord invite link in browser"""
-        discord_url = "https://discord.gg/Etyj4a5tjz"
-        QDesktopServices.openUrl(QUrl(discord_url))
+    def open_venmo_donation(self, event):
+        """Open Venmo donation link in browser"""
+        venmo_url = "https://venmo.com/u/Amr-Abouelleil"
+        QDesktopServices.openUrl(QUrl(venmo_url))
 
 
 if __name__ == "__main__":

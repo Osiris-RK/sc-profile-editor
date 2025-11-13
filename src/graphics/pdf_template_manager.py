@@ -220,10 +220,41 @@ class PDFTemplateManager:
                 # Template uses custom field names - need to map
                 button_mapping = field_mapping.get('button_mapping', {})
                 axis_mapping = field_mapping.get('axis_mapping', {})
+                hat_mapping = field_mapping.get('hat_mapping', {})
+                import re
 
+                # FIRST PASS: Handle literal values (strings in brackets like "[52]")
+                for pdf_name, mapped_value in button_mapping.items():
+                    if isinstance(mapped_value, str) and mapped_value.startswith('[') and mapped_value.endswith(']'):
+                        # Extract literal value (remove brackets)
+                        literal_value = mapped_value[1:-1]
+                        # Set literal value for all suffix variations
+                        pdf_field_values[f"{pdf_name}_1"] = literal_value
+                        pdf_field_values[f"{pdf_name}_2"] = literal_value
+                        pdf_field_values[pdf_name] = literal_value
+
+                # Similarly for axis mapping
+                for pdf_name, mapped_value in axis_mapping.items():
+                    if isinstance(mapped_value, str) and mapped_value.startswith('[') and mapped_value.endswith(']'):
+                        # Extract literal value (remove brackets)
+                        literal_value = mapped_value[1:-1]
+                        # Set literal value for all suffix variations
+                        pdf_field_values[f"{pdf_name}_1"] = literal_value
+                        pdf_field_values[f"{pdf_name}_2"] = literal_value
+                        pdf_field_values[pdf_name] = literal_value
+
+                # Similarly for hat mapping
+                for pdf_name, mapped_value in hat_mapping.items():
+                    if isinstance(mapped_value, str) and mapped_value.startswith('[') and mapped_value.endswith(']'):
+                        # Extract literal value (remove brackets)
+                        literal_value = mapped_value[1:-1]
+                        # Set literal value for all suffix variations
+                        pdf_field_values[f"{pdf_name}_1"] = literal_value
+                        pdf_field_values[f"{pdf_name}_2"] = literal_value
+                        pdf_field_values[pdf_name] = literal_value
+
+                # SECOND PASS: Handle normal button/axis/hat mappings from profile data
                 for input_code, value in field_values.items():
-                    import re
-
                     # Handle button inputs (e.g., "js1_button5" -> 5)
                     button_match = re.match(r'js\d+_button(\d+)', input_code)
                     if button_match:
@@ -231,7 +262,17 @@ class PDFTemplateManager:
 
                         # Find PDF field name for this button number
                         for pdf_name, btn_num in button_mapping.items():
-                            if btn_num == button_num:
+                            # Skip literal values (already handled above)
+                            if isinstance(btn_num, str) and btn_num.startswith('[') and btn_num.endswith(']'):
+                                continue
+
+                            # Convert string button numbers to int
+                            try:
+                                btn_num_int = int(btn_num)
+                            except (ValueError, TypeError):
+                                continue
+
+                            if btn_num_int == button_num:
                                 # Try both _1 and _2 suffixes (for multi-device PDFs)
                                 pdf_field_values[f"{pdf_name}_1"] = value
                                 pdf_field_values[f"{pdf_name}_2"] = value
@@ -245,8 +286,43 @@ class PDFTemplateManager:
 
                         # Find PDF field name for this axis
                         for pdf_name, mapped_axis in axis_mapping.items():
-                            mapped_axis_lower = mapped_axis.lower()
-                            if axis_name in mapped_axis_lower or mapped_axis_lower.endswith(axis_name):
+                            # Skip literal values (already handled above)
+                            if isinstance(mapped_axis, str) and mapped_axis.startswith('[') and mapped_axis.endswith(']'):
+                                continue
+
+                            # Normalize both values for comparison (remove spaces, underscores, make lowercase)
+                            mapped_axis_normalized = str(mapped_axis).lower().replace('_', '').replace(' ', '').replace('-', '')
+                            axis_name_normalized = axis_name.replace('_', '').replace(' ', '').replace('-', '')
+
+                            # Match if they're equivalent (e.g., "y" matches "y", "Y", "rotz" matches "rot_z" or "RotZ")
+                            if mapped_axis_normalized == axis_name_normalized:
+                                # Try both _1 and _2 suffixes (for multi-device PDFs)
+                                pdf_field_values[f"{pdf_name}_1"] = value
+                                pdf_field_values[f"{pdf_name}_2"] = value
+                                # Also try without suffix
+                                pdf_field_values[pdf_name] = value
+
+                    # Handle hat inputs (e.g., "js2_hat1_up", "js2_hat1_down")
+                    hat_match = re.match(r'js\d+_hat(\d+)_(up|down|left|right)', input_code, re.IGNORECASE)
+                    if hat_match:
+                        hat_num = int(hat_match.group(1))
+                        hat_dir = hat_match.group(2).lower()
+
+                        # Create standard hat identifier (e.g., "hat1_up", "hat2_left")
+                        hat_identifier = f"hat{hat_num}_{hat_dir}"
+
+                        # Find PDF field name for this hat direction
+                        for pdf_name, mapped_hat in hat_mapping.items():
+                            # Skip literal values (already handled above)
+                            if isinstance(mapped_hat, str) and mapped_hat.startswith('[') and mapped_hat.endswith(']'):
+                                continue
+
+                            # Normalize the mapped hat value for comparison
+                            mapped_hat_normalized = str(mapped_hat).lower().replace('_', '').replace(' ', '')
+                            hat_identifier_normalized = hat_identifier.replace('_', '')
+
+                            # Match if they're equivalent (e.g., "hat1_up" matches "hat1up" or "hat1_up")
+                            if mapped_hat_normalized == hat_identifier_normalized:
                                 # Try both _1 and _2 suffixes (for multi-device PDFs)
                                 pdf_field_values[f"{pdf_name}_1"] = value
                                 pdf_field_values[f"{pdf_name}_2"] = value
