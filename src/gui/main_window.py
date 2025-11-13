@@ -168,8 +168,7 @@ class MainWindow(QMainWindow):
         self.save_profile_btn = QPushButton("💾 Save Profile")
         self.save_profile_btn.setStyleSheet("padding: 10px 20px; font-size: 14px; background-color: #2196F3; color: white;")
         self.save_profile_btn.clicked.connect(self.save_profile)
-        self.save_profile_btn.setEnabled(False)
-        self.save_profile_btn.setVisible(False)  # Only show when profile is modified
+        self.save_profile_btn.setEnabled(False)  # Disabled until profile is modified
         header_layout.addWidget(self.save_profile_btn)
 
         # Help button (rightmost)
@@ -1384,13 +1383,12 @@ class MainWindow(QMainWindow):
         base_title = f"Star Citizen Profile Editor v{self.version}"
         if self.current_profile.is_modified:
             self.setWindowTitle(f"{base_title} - {self.current_profile.profile_name} *")
-            # Show and enable save button
-            self.save_profile_btn.setVisible(True)
+            # Enable save button when modified
             self.save_profile_btn.setEnabled(True)
         else:
             self.setWindowTitle(f"{base_title} - {self.current_profile.profile_name}")
-            # Hide save button
-            self.save_profile_btn.setVisible(False)
+            # Disable save button when not modified
+            self.save_profile_btn.setEnabled(False)
 
         # Refresh the controls table
         self.populate_controls_table()
@@ -1498,10 +1496,10 @@ class MainWindow(QMainWindow):
         browser = QTextBrowser()
         browser.setOpenExternalLinks(True)
 
-        # Load the USER_GUIDE.md file
+        # Load the README.md file
         user_guide_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "USER_GUIDE.md"
+            "README.md"
         )
 
         try:
@@ -1513,7 +1511,7 @@ class MainWindow(QMainWindow):
             browser.setHtml(html_content)
 
         except FileNotFoundError:
-            browser.setHtml("<h1>User Guide Not Found</h1><p>The USER_GUIDE.md file could not be found.</p>")
+            browser.setHtml("<h1>User Guide Not Found</h1><p>The README.md file could not be found.</p>")
         except Exception as e:
             browser.setHtml(f"<h1>Error Loading Guide</h1><p>{str(e)}</p>")
 

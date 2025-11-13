@@ -1,269 +1,456 @@
 # Star Citizen Profile Editor
 
-A desktop application for editing and converting Star Citizen control profile XML files into human-readable formats (PDF, Word, CSV) with annotated device graphics.
+A desktop application for editing and exporting Star Citizen control profiles in human-readable formats. Create visual diagrams of your controller layouts and export your bindings to PDF, Word, CSV, and annotated device graphics.
 
-> **Note:** This README is for developers. For end-user documentation, see [USER_GUIDE.md](USER_GUIDE.md).
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
 ## Features
 
-- Import Star Citizen XML control profiles
-- Generate human-readable control mapping tables
-- Create annotated device graphics (VKB Gladiator EVO, and more)
+- Import and customize Star Citizen control profiles
+- Generate visual controller diagrams with labeled buttons
 - Export to multiple formats: PDF, Word, CSV, PNG
-- Edit control labels with persistent custom overrides
-- Support for keyboard, mouse, and HOTAS devices
-- Interactive PDF-based template system for device graphics
+- 20+ device templates (VKB, VPC, Thrustmaster)
+- Custom label system for cleaner graphics
 - Filter and search control bindings
-- Auto-save last opened profile
+- Interactive PDF-based device viewer
 
-## Project Structure
+## Download & Installation
 
-```
-sc-profile-viewer/
-├── src/                        # Source code
-│   ├── main.py                # Application entry point
-│   ├── gui/                   # GUI components (PyQt6)
-│   │   ├── main_window.py    # Main application window
-│   │   └── webengine_pdf_widget.py # Interactive PDF device viewer
-│   ├── parser/                # XML parsing and label generation
-│   │   ├── xml_parser.py     # SC profile XML parser
-│   │   └── label_generator.py # Human-readable label generator
-│   ├── exporters/             # Export modules
-│   │   ├── csv_exporter.py   # CSV export
-│   │   ├── pdf_exporter.py   # PDF export
-│   │   ├── word_exporter.py  # Word document export
-│   │   └── graphic_exporter.py # Graphics export
-│   ├── graphics/              # Graphics and template management
-│   │   └── pdf_template_manager.py # PDF template loader
-│   ├── models/                # Data models
-│   │   └── profile_model.py  # Control profile data structures
-│   └── utils/                 # Utilities
-│       ├── settings.py       # Application settings persistence
-│       ├── label_overrides.py # Custom label override manager
-│       └── version.py        # Version management utilities
-├── scripts/                    # Build and utility scripts
-│   └── build/                 # Build scripts
-│       └── build_exe.py      # Standard build
-├── visual-templates/          # Device graphics templates
-├── example-profiles/          # Sample SC profile XML files
-├── assets/                    # Application assets (icons, images)
-├── tests/                     # Unit tests
-├── label_overrides.json       # Global label overrides
-├── VERSION.TXT                # Current version number
-├── CHANGELOG.md               # Version history and changes
-└── USER_GUIDE.md              # End-user documentation
-```
+> **Note:** Installation instructions will be added when releases are published on GitHub.
 
-## Setup for Development
+For now, download `SCProfileViewer.exe` from the releases page and run it directly (no installation required).
 
-### Prerequisites
-- Python 3.12 or higher
-- Git (for version control)
+## System Requirements
 
-### Installation Steps
+- Windows 10 or later (64-bit)
+- No additional dependencies required
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd sc-profile-viewer
-   ```
+---
 
-2. **Create virtual environment:**
-   ```bash
-   python -m venv .venv
-   ```
+## Table of Contents
+- [Getting Started](#getting-started)
+- [Main Features](#main-features)
+- [Control Table Views](#control-table-views)
+- [Customizing Labels](#customizing-labels)
+- [Device View](#device-view)
+- [Exporting Your Profile](#exporting-your-profile)
+- [Filters and Search](#filters-and-search)
+- [Tips and Tricks](#tips-and-tricks)
 
-3. **Activate virtual environment:**
-   ```bash
-   # Windows
-   .venv\Scripts\activate
+---
 
-   # Linux/Mac
-   source .venv/bin/activate
-   ```
+## Getting Started
 
-4. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Importing a Profile
 
-## Running the Application
+1. **Launch the application**
+2. Click the **"Import Profile XML"** button (green button in the top-right)
+3. Navigate to your Star Citizen profiles folder (usually `C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default`)
+4. Select your exported profile XML file
+5. Click **Open**
 
-### Development Mode
-```bash
-python -m src.main
-```
+The application will automatically load the last profile you opened when you start it again.
 
-Or directly:
-```bash
-python src/main.py
-```
+### First Look
 
-## Version Management
+After importing a profile, you'll see:
+- **Profile Summary**: Basic information about your profile in the top section
+- **Control Table**: A detailed table of all your keybindings
+- **Device View Tab**: Visual representations of your controllers with labeled buttons
+- **About Tab**: Project information, credits, and acknowledgements
 
-The project uses [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH).
+---
 
-### Current Version
-The current version is stored in `VERSION.TXT` and is displayed in:
-- Window title
-- Main application header
-- Help dialog
+## Main Features
 
-### Version Utilities
-Located in `src/utils/version.py`:
-- `get_version()` - Get current version
-- `increment_version(version, type)` - Increment major/minor/patch
-- `set_version(version)` - Update VERSION.TXT
+### Two Viewing Modes
 
-### Updating the Version
-You can update the version manually by editing `VERSION.TXT`, or use the build scripts with the `--increment` flag (see Building section below).
+The application offers two ways to view your control bindings:
 
-## Building Executables
+#### Default View (Simplified)
+- Shows only essential information: **Action Map**, **Action**, and **Device**
+- Perfect for quick reference and printing
+- Cleaner, more compact display
 
-### Standard Build
+#### Detailed View (Complete)
+- Shows all information including:
+  - **Action Map**: The category of the action (e.g., "Spaceship Movement")
+  - **Action (Original)**: The auto-generated action name
+  - **Action (Override)**: Your custom label (if you've set one)
+  - **Input Code**: The raw input code (e.g., "js1_button5")
+  - **Input Label**: Human-readable input (e.g., "Joystick 1: Button 5")
+  - **Device**: The device name
 
-```bash
-# Build without version increment
-python scripts/build/build_exe.py
+**To toggle between views:** Check/uncheck the **"Show Detailed"** checkbox in the Filters section.
 
-# Build and increment patch version (0.1.0 -> 0.1.1)
-python scripts/build/build_exe.py --increment patch
+---
 
-# Build and increment minor version (0.1.0 -> 0.2.0)
-python scripts/build/build_exe.py --increment minor
+## Control Table Views
 
-# Build and increment major version (0.1.0 -> 1.0.0)
-python scripts/build/build_exe.py --increment major
-```
+### Understanding the Table
 
-**Output:** `dist/SCProfileViewer.exe`
+The control table displays all your keybindings organized by action map. Each row represents one binding.
 
-### Version Increment Guidelines
+**Default Columns:**
+- **Action Map**: Category like "Spaceship Movement", "Spaceship Weapons", etc.
+- **Action**: What the button does (e.g., "Fire", "Afterburner")
+- **Device**: Which controller (e.g., "Keyboard", "Joystick 1")
 
-- **Patch** (`--increment patch`): Bug fixes, minor tweaks ui tweaks, no new features
-- **Minor** (`--increment minor`): New features, additional device support backward-compatible changes
-- **Major** (`--increment major`): Breaking changes, major rewrites
+**Detailed Columns (when "Show Detailed" is checked):**
+- All default columns plus:
+- **Action (Original)**: The auto-generated name from the game
+- **Action (Override)**: Your custom short name
+- **Input Code**: Technical identifier (e.g., "js1_button1")
+- **Input Label**: Formatted input name (e.g., "Joystick 1: Button 1")
 
-### Build Process Details
+### Sorting
 
-The build scripts:
-1. Display current version or increment if requested
-2. Clean previous build artifacts
-3. Bundle all required files (templates, assets, etc.)
-4. Create standalone executable using PyInstaller
-5. Place output in `dist/` directory
+Click any column header to sort by that column. Click again to reverse the sort order.
 
-**Important Files Bundled:**
-- `VERSION.TXT` - Version number
-- `label_overrides.json` - Global label mappings
-- `USER_GUIDE.md` - User documentation
-- `assets/` - Icons and images
-- `visual-templates/` - Device templates
-- `example-profiles/` - Sample profiles
+---
 
-## Creating Installer Packages
+## Customizing Labels
 
-> **TODO:** Document installer creation process when implemented
+One of the most powerful features is the ability to create custom, shorter labels for actions to make your graphics more readable.
 
-For distribution, you may want to create installer packages:
-- Windows: Use NSIS, Inno Setup, or WiX
-- macOS: Create .dmg or .pkg
-- Linux: Create .deb, .rpm, or AppImage
+### How to Edit Labels
 
-## Testing
+1. **Find the action** you want to rename in the Control Table
+2. **Double-click** the cell in the "Action" column (or "Action (Override)" if in detailed view)
+3. The text will be selected automatically
+4. **Type your new label** (e.g., change "Missile Launch" to "ML")
+5. Press **Enter** or click outside the cell to save
 
-Run unit tests:
-```bash
-pytest tests/
-```
+**Examples:**
+- "Fire" → "F"
+- "Afterburner" → "AB"
+- "Target Cycle All Forward" → "Next Tgt"
+- "Shield Raise Level Forward" → "Shld Fwd"
 
-Run tests with coverage:
-```bash
-pytest --cov=src tests/
-```
+### Reverting Custom Labels
 
-## Release Process
+To remove a custom label and return to the auto-generated one:
 
-1. **Update CHANGELOG.md**
-   - Move changes from `[Unreleased]` to a new version section
-   - Add release date
-   - Create new empty `[Unreleased]` section
+1. **Double-click** the action label cell
+2. **Select all text** (Ctrl+A) and **delete** it (or just press Delete since text is auto-selected)
+3. Press **Enter**
 
-2. **Build with version increment**
-   ```bash
-   python scripts/build/build_exe.py --increment minor
-   ```
+The label will revert to either:
+- The global default label (if one exists in `label_overrides.json`)
+- The auto-generated label
 
-3. **Test the executable**
-   - Run `dist/SCProfileViewer.exe`
-   - Verify version displays correctly
-   - Test all major features
+### How Label Overrides Work
 
-4. **Create Git tag**
-   ```bash
-   git add VERSION.TXT CHANGELOG.md
-   git commit -m "Release vX.Y.Z"
-   git tag -a vX.Y.Z -m "Version X.Y.Z"
-   git push origin main --tags
-   ```
+The application uses a two-tier label system:
 
-5. **Publish release**
-   - Create GitHub release with the tag
-   - Upload executable from `dist/`
-   - Copy changelog section to release notes
+1. **Global Defaults** (`label_overrides.json`)
+   - Pre-configured short labels for 72 common Star Citizen actions
+   - Shipped with the application
+   - Examples: "v_attack1" → "Fire", "v_afterburner" → "Afterburner"
 
-## Development Workflow
+2. **Custom Overrides** (`label_overrides_custom.json`)
+   - Your personal customizations
+   - Created automatically when you edit your first label
+   - Takes priority over global defaults
+   - Not tracked in version control (your personal file)
 
-### Adding New Features
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Implement changes
-3. Update tests
-4. Add entry to CHANGELOG.md under `[Unreleased]`
-5. Submit pull request
+**Priority Order:**
+1. Your custom label (if you've edited it)
+2. Global default label (if defined)
+3. Auto-generated label (from the action name)
 
-### Bug Fixes
-1. Create bugfix branch: `git checkout -b bugfix/issue-name`
-2. Fix the issue
-3. Add tests to prevent regression
-4. Update CHANGELOG.md
-5. Submit pull request
+---
 
-## Technology Stack
+## Device View
 
-- **Python 3.12+** - Programming language
-- **PyQt6** - GUI framework
-- **python-docx** - Word document generation
-- **reportlab** - PDF generation
-- **Pillow** - Image processing
-- **PyInstaller** - Executable packaging
-- **pytest** - Testing framework
+The **Device View** tab shows interactive visual representations of your controllers with your bindings labeled on them.
 
-## Contributing
+### Available Device Templates
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Update documentation
-6. Submit pull request
+The application includes PDF templates for 20+ devices:
+- **VKB Gladiator** - EVO and SCG variants (Left/Right, OTA variants)
+- **VKB Gunfighter** - MCG Ultimate, SCG variants (Left/Right, OTA variants)
+- **VKB Space Sim Module (SEM)** - Standard and V variants
+- **VKB STECS Throttle System** - Base unit, STEM, ATEM, Space Throttle Grips
+- **VKB Throttle Quadrants** - THQ, THQ-V, THQ-WW2, THQ-V-WW2
+- **VKB F16 MFD** - Multi-Function Display
+- **VPC MongoosT-50CM3** - Right stick
+- **Thrustmaster TWCS** - Throttle
+
+### How Graphics Work
+
+1. Switch to the **"Device View"** tab
+2. Select your device from the dropdown
+3. The interactive PDF will show:
+   - Button/axis labels on the device diagram
+   - Your custom action labels automatically filled in
+   - Easy-to-read layout
+
+**Graphics automatically update** when you edit labels in the Control Table!
+
+### Using the Interactive PDF Viewer
+
+- **Zoom**: Use your mouse wheel or the zoom controls
+- **Navigate**: The PDF viewer provides browser-like controls
+- **Export**: Click the "Export Graphic" button in the top header to save as PNG or PDF
+
+---
+
+## Exporting Your Profile
+
+You can export your profile in four formats. All export buttons are located in the top header for easy access:
+
+### Export to CSV
+
+**Best for:** Spreadsheets, further data processing
+
+1. Click **"Export CSV"** button
+2. Choose a location and filename
+3. Click **Save**
+
+The CSV will contain all visible rows from your current view (default or detailed).
+
+**Opens in:** Excel, Google Sheets, LibreOffice Calc
+
+### Export to PDF
+
+**Best for:** Printing, sharing, archiving
+
+1. Click **"Export PDF"** button
+2. Choose a location and filename
+3. Click **Save**
+
+The PDF includes:
+- Profile information
+- Device list
+- Full table of bindings (formatted for landscape orientation)
+
+**Features:**
+- Professional formatting
+- Alternating row colors for readability
+- Automatic page breaks
+
+### Export to Word Document
+
+**Best for:** Editing, custom formatting, documentation
+
+1. Click **"Export Word"** button
+2. Choose a location and filename
+3. Click **Save**
+
+The Word document includes:
+- Title page with profile name
+- Device information
+- Formatted table of bindings
+- Easy to customize and edit
+
+**Opens in:** Microsoft Word, Google Docs, LibreOffice Writer
+
+### Export Device Graphic
+
+**Best for:** Visual reference, printing controller layouts
+
+1. Switch to the **"Device View"** tab
+2. Select your device from the dropdown
+3. Click the **"Export Graphic"** button in the top header
+4. Choose format (PNG or PDF) and location
+5. Click **Save**
+
+The graphic will include:
+- Device image with labeled controls
+- Your custom action labels
+- Clear, print-ready layout
+
+**Note:** The Export Graphic button is only enabled when a device with a template is loaded.
+
+### Export Modes
+
+All table export formats (CSV, PDF, Word) respect the **"Show Detailed"** checkbox:
+- **Unchecked**: Exports simplified view (3 columns)
+- **Checked**: Exports detailed view (6 columns)
+
+---
+
+## Filters and Search
+
+### Search Box
+
+Type in the **Search** box to filter bindings by any text:
+- Action names
+- Device names
+- Input labels
+- Action maps
+
+**Example searches:**
+- "fire" - Shows all fire-related actions
+- "joystick 1" - Shows all Joystick 1 bindings
+- "shield" - Shows all shield controls
+
+### Device Filter
+
+Select a device from the **Device** dropdown to show only bindings for that device:
+- All Devices (default)
+- Keyboard
+- Mouse
+- Joystick 1
+- Joystick 2
+- etc.
+
+### Action Map Filter
+
+Filter by category using the **Action Map** dropdown:
+- All Action Maps (default)
+- Spaceship Movement
+- Spaceship Weapons
+- Spaceship Targeting
+- Spaceship Mining
+- etc.
+
+### Hide Unmapped Keys
+
+Check **"Hide Unmapped Keys"** to hide any inputs that don't have bindings assigned.
+
+### Clear Filters
+
+Click **"Clear Filters"** to reset all filters and show everything.
+
+---
+
+## Tips and Tricks
+
+### Creating a Reference Card
+
+1. **Customize labels** for your most important actions with short names
+2. Switch to **Default View** (uncheck "Show Detailed")
+3. **Filter** to show only one device (e.g., "Joystick 1")
+4. **Export to PDF**
+5. Print and keep next to your controller!
+
+### Quick Label Editing
+
+- Labels are **auto-selected** when you double-click, so you can immediately start typing
+- Press **Delete** to clear a label completely (reverts to default)
+- Press **Escape** while editing to cancel changes
+
+### Understanding Your Setup
+
+Use **Detailed View** to see:
+- Which physical buttons are mapped (Input Code + Input Label)
+- Original action names vs. your custom labels
+- Device assignments at a glance
+
+### Graphics Workflow
+
+1. **First pass**: Use default labels to see what's mapped
+2. **Customize**: Edit labels to short versions that fit in graphics
+3. **Export graphics**: Switch to Device View tab and export images
+4. **Print**: Create a physical reference sheet
+
+### Managing Multiple Profiles
+
+The application remembers your last loaded profile and automatically opens it on startup. To switch profiles:
+1. Click **"Import Profile XML"**
+2. Select a different profile
+3. Your custom labels are **saved globally** and will apply to matching actions in any profile
+
+### Backup Your Custom Labels
+
+Your custom labels are stored in `label_overrides_custom.json` in the application directory. To backup:
+1. Locate the file in the application folder
+2. Copy it to a safe location
+3. To restore, just copy it back
+
+---
+
+## Example Workflow
+
+### Scenario: Creating a HOTAS Reference Card
+
+1. **Import** your Star Citizen profile
+2. **Filter** to show only "Joystick 1" in the Device filter
+3. **Edit labels** to create short versions:
+   - "Target Cycle All Forward" → "Next"
+   - "Target Cycle All Back" → "Prev"
+   - "Missile Launch" → "MSL"
+   - "Shield Raise Level Forward" → "Shld F"
+4. **Switch to Device View** tab
+5. **Select** your joystick model
+6. **Verify** the labels look good on the graphic
+7. **Export** the graphic as an image
+8. **Return to Control Table** and export to PDF
+9. **Print** both the graphic and the PDF for reference
+
+---
 
 ## Troubleshooting
 
-### Build Issues
-- **Permission Error:** Close any running instances of the application
-- **Import Error:** Ensure virtual environment is activated and dependencies are installed
-- **Missing Files:** Check that all required assets are in the correct directories
+### Table doesn't show after importing
 
-### Development Issues
-- **PyQt6 Import Error:** Reinstall PyQt6: `pip install --upgrade PyQt6`
-- **Version Not Displaying:** Ensure VERSION.TXT exists in project root
+- Toggle any checkbox (like "Show Detailed") to refresh the view
+- This is a known issue that will be fixed in the next update
 
-## Documentation
+### Custom labels not appearing in graphics
 
-- **USER_GUIDE.md** - End-user documentation (in-app Help)
-- **CHANGELOG.md** - Version history and changes
-- **CLAUDE.md** - Project context and AI assistant instructions
+- Make sure you pressed Enter after editing the label
+- Switch tabs and back to refresh the graphics
 
-## License
+### Can't edit a cell
 
-TBD
+- Make sure you're double-clicking the "Action" or "Action (Override)" column (column 2)
+- Other columns are read-only
+
+### Export buttons are disabled
+
+- Make sure you've imported a profile first
+- The buttons enable after a successful profile load
+
+---
+
+## Keyboard Shortcuts
+
+Currently, the application uses standard Qt shortcuts:
+- **Ctrl+C**: Copy selected text
+- **Ctrl+V**: Paste (when editing)
+- **Escape**: Cancel editing
+- **Enter**: Save edit
+
+---
+
+## Getting Help
+
+For issues, feature requests, or contributions:
+- Join the Discord community (link in app footer)
+- Report bugs with steps to reproduce
+- Request new device templates
+- Share your custom label configurations
+- Suggest improvements
+
+---
+
+## Developer Documentation
+
+For development setup, building from source, and contributing:
+- See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+
+---
+
+## Version Information
+
+This guide is for Star Citizen Profile Editor v0.4.0
+
+**Features in v0.4.0:**
+- Interactive PDF-based device templates (20+ devices supported)
+- Expanded VKB device support (Gladiator, Gunfighter, STECS, THQ variants)
+- Browser-like PDF viewer with QtWebEngine
+- Three-tab interface: Controls Table, Device View, About
+- Custom label override system with three-tier priority
+- Show Detailed view toggle (3 or 6 columns)
+- Export to CSV, PDF, Word, and device graphics (PNG/PDF)
+- Filter by device, action map, search text
+- Automatic label mapping to device buttons
+- Version display in window title and exports
+
+---
+
+**Happy Flying, Citizen!** o7

@@ -11,7 +11,7 @@ This document explains where different files are stored when running the applica
 - **Files:**
   - `VERSION.TXT` - Application version number
   - `label_overrides.json` - Global default label overrides
-  - `USER_GUIDE.md` - User documentation
+  - `README.md` - User documentation
   - `visual-templates/` - Device graphics templates
   - `example-profiles/` - Sample profiles
   - `assets/` - Icons and images

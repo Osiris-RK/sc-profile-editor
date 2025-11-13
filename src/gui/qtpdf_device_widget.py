@@ -1,0 +1,674 @@
+"""
+QtPdf-based PDF widget with clickable field regions
+
+This widget renders PDFs as images and provides clickable regions
+that open dialog popups for editing labels.
+"""
+
+import sys
+import os
+import logging
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                              QComboBox, QMessageBox, QGraphicsView, QGraphicsScene,
+                              QGraphicsPixmapItem, QInputDialog)
+from PyQt6.QtGui import QPainter
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from graphics.pdf_template_manager import PDFTemplateManager, PDFDeviceTemplate
+from models.profile_model import ControlProfile, Device
+from parser.label_generator import LabelGenerator
+from utils.device_joystick_mapper import DeviceJoystickMapper
+from utils.device_splitter import get_friendly_device_name
+
+logger = logging.getLogger(__name__)
+
+
+class InteractivePDFGraphicsView(QGraphicsView):
+    """Custom QGraphicsView with clickable form fields"""
+
+    # Signal emitted when a field is clicked: (input_code, current_value)
+    field_clicked = pyqtSignal(str, str)
+
+    def __init__(self, scene):
+        super().__init__(scene)
+        self._fit_on_resize = True
+        self.field_regions = {}  # input_code -> QRectF (in scene coordinates)
+        self.field_values = {}  # input_code -> current_value
+
+    def set_field_regions(self, field_regions: dict, field_values: dict):
+        """Set clickable field regions"""
+        self.field_regions = field_regions
+        self.field_values = field_values
+
+    def resizeEvent(self, event):
+        """Re-fit the view when resized"""
+        super().resizeEvent(event)
+        if self._fit_on_resize and self.scene() and not self.scene().sceneRect().isEmpty():
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+
+    def mousePressEvent(self, event):
+        """Handle mouse clicks to detect field clicks"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Map view coordinates to scene coordinates
+            scene_pos = self.mapToScene(event.pos())
+
+            # Check if click is within any field region
+            for input_code, rect in self.field_regions.items():
+                if rect.contains(scene_pos):
+                    # Field clicked - emit signal
+                    current_value = self.field_values.get(input_code, "")
+                    self.field_clicked.emit(input_code, current_value)
+                    return
+
+        # Default handling for non-field clicks
+        super().mousePressEvent(event)
+
+
+class QtPdfDeviceWidget(QWidget):
+    """Widget for displaying device PDFs with interactive clickable form fields"""
+
+    # Signal emitted when export availability changes
+    export_available_changed = pyqtSignal(bool)
+
+    def __init__(self, templates_dir: str):
+        super().__init__()
+        self.templates_dir = templates_dir
+        self.pdf_manager = PDFTemplateManager(templates_dir)
+        self.current_profile: ControlProfile = None
+        self.current_device: Device = None
+        self.current_template: PDFDeviceTemplate = None
+        self.current_template_search_name: str = None  # For split devices (e.g., VKB + SEM)
+        self.device_mapper: DeviceJoystickMapper = None
+        self.current_field_values: dict = {}  # Store current field values
+        self.field_to_input_code: dict = {}  # Map PDF field names to input codes
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Set up the user interface"""
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        # Device selection
+        selection_layout = QHBoxLayout()
+        selection_layout.addWidget(QLabel("Select Device:"))
+
+        self.device_combo = QComboBox()
+        self.device_combo.currentIndexChanged.connect(self.on_device_changed)
+        selection_layout.addWidget(self.device_combo, 1)
+
+        layout.addLayout(selection_layout)
+
+        # Graphics view (interactive)
+        self.scene = QGraphicsScene()
+        self.view = InteractivePDFGraphicsView(self.scene)
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.view.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        self.view.setDragMode(QGraphicsView.DragMode.NoDrag)  # Allow clicks
+        self.view.field_clicked.connect(self.on_field_clicked)
+        layout.addWidget(self.view)
+
+        # Status label
+        self.status_label = QLabel("No device selected")
+        self.status_label.setStyleSheet("color: #666; font-size: 11px;")
+        layout.addWidget(self.status_label)
+
+    def load_profile(self, profile: ControlProfile):
+        """Load a profile and populate device list"""
+        self.current_profile = profile
+        self.device_combo.clear()
+
+        if not profile:
+            return
+
+        # Create device-to-joystick mapper
+        try:
+            self.device_mapper = DeviceJoystickMapper(profile,
+                os.path.join(self.templates_dir, "template_registry.json"))
+        except Exception as e:
+            logger.error(f"Error creating device mapper: {e}", exc_info=True)
+            self.device_mapper = None
+
+        # Add devices that have PDF templates
+        from utils.device_splitter import is_vkb_with_sem, get_base_stick_name
+
+        for device in profile.devices:
+            if device.device_type == 'joystick':
+                raw_device_name = device.product_name if device.product_name else f"Joystick {device.instance}"
+
+                # Check if this is a VKB device with SEM module
+                if is_vkb_with_sem(raw_device_name):
+                    # Split into two entries: base stick and SEM module
+
+                    # 1. Add ALL matching base stick templates (user can choose)
+                    base_stick_name = get_base_stick_name(raw_device_name)
+                    matching_templates = self.find_all_matching_templates(base_stick_name)
+
+                    if matching_templates:
+                        for template in matching_templates:
+                            # Store tuple: (device, template.name) for searching
+                            # Use template name as search key since it's unique
+                            self.device_combo.addItem(template.name, (device, template.name))
+                    else:
+                        friendly_base_name = get_friendly_device_name(base_stick_name)
+                        self.device_combo.addItem(f"{friendly_base_name} (No template)", (device, base_stick_name))
+
+                    # 2. Add SEM module entry
+                    sem_template = self.pdf_manager.find_template("VKB SEM")
+
+                    if sem_template:
+                        # Store tuple: (device, "VKB SEM")
+                        self.device_combo.addItem("VKB SEM", (device, "VKB SEM"))
+                    else:
+                        self.device_combo.addItem("VKB SEM (No template)", (device, "VKB SEM"))
+                else:
+                    # Regular device (no SEM) - show ALL matching templates
+                    matching_templates = self.find_all_matching_templates(raw_device_name)
+
+                    if matching_templates:
+                        for template in matching_templates:
+                            # Store tuple: (device, template.name)
+                            self.device_combo.addItem(template.name, (device, template.name))
+                    else:
+                        device_name = get_friendly_device_name(raw_device_name)
+                        self.device_combo.addItem(f"{device_name} (No template)", device)
+
+        if self.device_combo.count() == 0:
+            self.status_label.setText("No devices found")
+            self.device_combo.addItem("No devices available", None)
+        else:
+            self.status_label.setText(f"Found {self.device_combo.count()} device(s)")
+
+    def find_all_matching_templates(self, device_name: str) -> list:
+        """
+        Find all templates that match a device name
+
+        Args:
+            device_name: Device product name
+
+        Returns:
+            List of matching PDFDeviceTemplate objects
+        """
+        if not device_name:
+            return []
+
+        matching_templates = []
+        device_name_lower = device_name.lower().strip()
+
+        # Get all templates from the registry
+        for template in self.pdf_manager.templates:
+            # Check each device match pattern
+            for pattern in template.device_match_patterns:
+                pattern_lower = pattern.lower().strip()
+                if pattern_lower in device_name_lower or device_name_lower in pattern_lower:
+                    matching_templates.append(template)
+                    break  # Don't add the same template multiple times
+
+        return matching_templates
+
+    def find_template_by_name(self, template_name: str):
+        """
+        Find a template by its display name
+
+        Args:
+            template_name: Template display name (e.g., "VKB Gladiator SCG OTA (Left)")
+
+        Returns:
+            PDFDeviceTemplate object or None
+        """
+        if not template_name:
+            return None
+
+        for template in self.pdf_manager.templates:
+            if template.name == template_name:
+                return template
+
+        return None
+
+    def select_device_by_name(self, device_name: str) -> bool:
+        """Select a device in the combo box by its name"""
+        if not device_name:
+            return False
+
+        for i in range(self.device_combo.count()):
+            item_data = self.device_combo.itemData(i)
+
+            if item_data and hasattr(item_data, 'product_name'):
+                if item_data.product_name == device_name:
+                    self.device_combo.setCurrentIndex(i)
+                    return True
+
+        return False
+
+    def on_device_changed(self, index: int):
+        """Handle device selection change"""
+        if index < 0:
+            return
+
+        item_data = self.device_combo.itemData(index)
+        if not item_data:
+            self.scene.clear()
+            self.status_label.setText("No device selected")
+            self.export_available_changed.emit(False)
+            return
+
+        # Handle both old format (device) and new format (device, template_name)
+        if isinstance(item_data, tuple):
+            self.current_device = item_data[0]
+            self.current_template_search_name = item_data[1]
+        else:
+            self.current_device = item_data
+            self.current_template_search_name = None
+
+        self.load_device_pdf()
+
+    def load_device_pdf(self):
+        """Load and display device PDF with populated form fields"""
+        if not self.current_device:
+            return
+
+        # Find PDF template for this device
+        # Use the template search name if set (for split devices or user selection)
+        if self.current_template_search_name:
+            # Search name might be a template name (e.g., "VKB Gladiator SCG OTA (Left)")
+            # Try to find by template name first
+            template = self.find_template_by_name(self.current_template_search_name)
+            if not template:
+                # Fallback: try as device name pattern
+                template = self.pdf_manager.find_template(self.current_template_search_name)
+        else:
+            # No specific template selected, use device name
+            template = self.pdf_manager.find_template(self.current_device.product_name or "")
+
+        if not template:
+            self.scene.clear()
+            self.status_label.setText("No PDF template available for this device")
+            self.export_available_changed.emit(False)
+            return
+
+        self.current_template = template
+
+        # Verify PDF exists
+        if not os.path.exists(template.pdf_path):
+            self.scene.clear()
+            self.status_label.setText(f"PDF template not found: {template.pdf_path}")
+            self.export_available_changed.emit(False)
+            return
+
+        # Get field values from bindings
+        field_values = self.get_field_values_for_device()
+        self.current_field_values = field_values
+
+        # Get field regions for clickable areas
+        field_regions, field_value_map = self.get_field_regions(template, dpi=150)
+
+        # Render PDF with populated fields
+        try:
+            pixmap = self.pdf_manager.render_template(template, field_values, dpi=150)
+
+            if pixmap is None or pixmap.isNull():
+                self.scene.clear()
+                self.status_label.setText(f"Failed to render PDF: {template.pdf_path}")
+                self.export_available_changed.emit(False)
+                return
+
+            # Clear scene and add pixmap
+            self.scene.clear()
+            pixmap_item = QGraphicsPixmapItem(pixmap)
+            self.scene.addItem(pixmap_item)
+
+            # Set clickable field regions in the view
+            self.view.set_field_regions(field_regions, field_value_map)
+
+            # Fit view to scene
+            self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+
+            self.status_label.setText(f"Loaded: {template.name} ({len(field_values)} fields populated) - Click fields to edit")
+            self.export_available_changed.emit(True)
+
+        except Exception as e:
+            logger.error(f"Error rendering PDF template: {e}", exc_info=True)
+            self.scene.clear()
+            self.status_label.setText(f"Error rendering PDF: {str(e)}")
+            self.export_available_changed.emit(False)
+
+    def get_field_values_for_device(self) -> dict:
+        """Get PDF form field values for the current device"""
+        field_values = {}
+
+        if not self.current_device or not self.current_profile or not self.device_mapper:
+            return field_values
+
+        # Get joystick index for this device
+        js_index = self.device_mapper.get_js_index_for_device(self.current_device.product_name or "")
+
+        if js_index is None:
+            logger.warning(f"No JS index found for device: {self.current_device.product_name}")
+            return field_values
+
+        # Extract JS number
+        js_num = js_index.replace("js", "")
+
+        # Get all bindings for this device
+        device_bindings = self.get_device_bindings()
+
+        # Group bindings by input code
+        from collections import defaultdict
+        grouped_bindings = defaultdict(list)
+
+        for action_map_name, binding in device_bindings:
+            input_code = binding.input_code.strip()
+            if input_code and input_code.startswith(f"js{js_num}_"):
+                grouped_bindings[input_code].append((action_map_name, binding))
+
+        # Create field values map
+        for input_code, bindings in grouped_bindings.items():
+            # Get action labels
+            action_labels = []
+            for action_map_name, binding in bindings:
+                action_label = LabelGenerator.get_action_label(binding.action_name, binding)
+                action_labels.append(action_label)
+
+            # Remove duplicates
+            unique_labels = list(dict.fromkeys(action_labels))
+
+            # Join multiple actions
+            combined_label = ' / '.join(unique_labels)
+
+            # Store in field values
+            field_values[input_code] = combined_label
+
+        logger.debug(f"Generated {len(field_values)} field values for device")
+        return field_values
+
+    def get_device_bindings(self) -> list:
+        """Get all bindings for the current device"""
+        if not self.current_device or not self.current_profile:
+            return []
+
+        bindings = []
+        device_instance = self.current_device.instance
+        device_type = self.current_device.device_type
+
+        for action_map in self.current_profile.action_maps:
+            for binding in action_map.actions:
+                if device_type == 'joystick' and binding.input_code.startswith(f'js{device_instance}_'):
+                    bindings.append((action_map.name, binding))
+
+        return bindings
+
+    def get_field_regions(self, template: PDFDeviceTemplate, dpi: int = 150):
+        """Get field regions from PDF for click detection"""
+        import fitz
+
+        field_regions = {}
+        field_values = {}
+
+        try:
+            doc = fitz.open(template.pdf_path)
+            page = doc[0]
+
+            # Get field mapping if exists
+            field_mapping = self.pdf_manager.load_field_mapping(template)
+
+            # DPI scale factor
+            zoom = dpi / 72.0
+
+            for widget in page.widgets():
+                field_name = widget.field_name
+                rect = widget.rect
+
+                # Scale rect to match rendered image
+                scaled_rect = QRectF(
+                    rect.x0 * zoom,
+                    rect.y0 * zoom,
+                    (rect.x1 - rect.x0) * zoom,
+                    (rect.y1 - rect.y0) * zoom
+                )
+
+                # Map PDF field name to input code
+                input_code = self.map_pdf_field_to_input_code(field_name, field_mapping)
+
+                if input_code:
+                    field_regions[input_code] = scaled_rect
+                    # Store current value for this field
+                    current_value = self.current_field_values.get(input_code, "")
+                    field_values[input_code] = current_value
+                    # Store reverse mapping
+                    self.field_to_input_code[field_name] = input_code
+
+            doc.close()
+
+        except Exception as e:
+            logger.error(f"Error getting field regions: {e}", exc_info=True)
+
+        return field_regions, field_values
+
+    def map_pdf_field_to_input_code(self, pdf_field_name: str, field_mapping: dict) -> str:
+        """Map PDF field name to Star Citizen input code"""
+        if not self.device_mapper:
+            return None
+
+        # Get JS index for this device
+        js_index = self.device_mapper.get_js_index_for_device(self.current_device.product_name or "")
+        if not js_index:
+            return None
+
+        js_num = js_index.replace("js", "")
+
+        if field_mapping:
+            # Has custom mapping
+            button_mapping = field_mapping.get('button_mapping', {})
+
+            # Remove _1 or _2 suffix if present
+            base_field_name = pdf_field_name
+            if pdf_field_name.endswith('_1') or pdf_field_name.endswith('_2'):
+                base_field_name = pdf_field_name[:-2]
+
+            # Find button number for this PDF field
+            button_num = button_mapping.get(base_field_name)
+            if button_num:
+                return f"js{js_num}_button{button_num}"
+        else:
+            # Direct mapping - PDF field should be input code
+            return pdf_field_name
+
+        return None
+
+    def on_field_clicked(self, input_code: str, current_value: str):
+        """Handle click on a PDF form field"""
+        # Show simplified remapping dialog
+        try:
+            from gui.remap_dialog import RemapDialog
+
+            dialog = RemapDialog(input_code, self.current_profile, self)
+            dialog.binding_changed.connect(
+                lambda action_name, new_label: self.on_binding_changed_simplified(
+                    action_name, new_label
+                )
+            )
+            dialog.exec()
+        except Exception as e:
+            logger.error(f"Error showing remap dialog: {e}", exc_info=True)
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to open remapping dialog:\n{str(e)}"
+            )
+
+    def on_binding_changed_simplified(self, action_name: str, new_label: str):
+        """Handle changes from the simplified remapping dialog"""
+        # Find the binding by action name
+        binding = None
+        for action_map in self.current_profile.action_maps:
+            for b in action_map.actions:
+                if b.action_name == action_name:
+                    binding = b
+                    break
+            if binding:
+                break
+
+        if not binding:
+            logger.error(f"Could not find binding for action: {action_name}")
+            return
+
+        # Update custom label
+        if new_label:
+            self.update_binding_label(binding, new_label)
+        else:
+            # Revert to default
+            default_label = LabelGenerator.generate_action_label(binding.action_name)
+            self.update_binding_label(binding, default_label)
+
+        # Mark profile as modified
+        if self.current_profile:
+            self.current_profile.mark_modified()
+
+        # Reload override manager cache
+        from utils.label_overrides import get_override_manager
+        override_manager = get_override_manager()
+        override_manager.reload()
+
+        # Reload the PDF with updated values
+        self.load_device_pdf()
+
+        # Notify parent to update table and window title
+        self.notify_profile_changed()
+
+        logger.info(f"Updated binding: {binding.action_name} with label '{new_label}'")
+
+    def find_binding_by_input_code(self, input_code: str):
+        """Find binding object by input code"""
+        if not self.current_profile:
+            return None
+
+        for action_map in self.current_profile.action_maps:
+            for binding in action_map.actions:
+                if binding.input_code == input_code:
+                    return binding
+
+        return None
+
+    def update_binding_label(self, binding, new_label: str):
+        """Update a binding's custom label"""
+        try:
+            from utils.label_overrides import get_override_manager
+
+            override_manager = get_override_manager()
+
+            # Get default label
+            default_label = LabelGenerator.generate_action_label(binding.action_name)
+
+            if new_label == default_label:
+                # Remove custom override
+                override_manager.remove_custom_override(binding.action_name)
+                binding.custom_label = None
+            else:
+                # Save custom override
+                override_manager.set_custom_override(binding.action_name, new_label)
+                binding.custom_label = new_label
+
+        except Exception as e:
+            logger.error(f"Error updating binding label: {e}", exc_info=True)
+
+    def notify_profile_changed(self):
+        """Notify parent window that the profile has changed"""
+        try:
+            parent = self.parent()
+            while parent:
+                if hasattr(parent, 'on_profile_modified'):
+                    parent.on_profile_modified()
+                    logger.info("Notified main window of profile changes")
+                    break
+                parent = parent.parent()
+        except Exception as e:
+            logger.warning(f"Could not notify main window: {e}")
+
+    def export_graphic(self):
+        """Export the rendered PDF graphic"""
+        if not self.current_template:
+            QMessageBox.warning(self, "No Template", "No device template is currently loaded.")
+            return
+
+        from PyQt6.QtWidgets import QFileDialog
+
+        # Create default filename
+        device_name = (self.current_device.product_name or 'device').replace(' ', '_')
+        default_filename = f"{device_name}_controls.png"
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Device Graphic",
+            default_filename,
+            "PNG Image (*.png);;PDF Document (*.pdf)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            if file_path.lower().endswith('.pdf'):
+                self.export_to_pdf(file_path)
+            else:
+                self.export_to_png(file_path)
+
+            QMessageBox.information(
+                self,
+                "Success",
+                f"Graphic exported successfully!\n\nSaved to:\n{file_path}"
+            )
+            self.status_label.setText(f"Exported to: {os.path.basename(file_path)}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Export Error", f"Failed to export graphic:\n{str(e)}")
+            self.status_label.setText("Export failed")
+
+    def export_to_png(self, file_path: str):
+        """Export scene to PNG"""
+        from PyQt6.QtGui import QImage
+
+        # Get scene bounding rect
+        rect = self.scene.sceneRect()
+
+        # Create image
+        image = QImage(int(rect.width()), int(rect.height()), QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.white)
+
+        # Render scene to image
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.scene.render(painter)
+        painter.end()
+
+        # Save image
+        image.save(file_path, "PNG")
+
+    def export_to_pdf(self, file_path: str):
+        """Export as PDF with populated fields"""
+        import tempfile
+        import shutil
+
+        # Create populated PDF
+        temp_dir = os.path.dirname(self.current_template.pdf_path)
+        fd, temp_pdf_path = tempfile.mkstemp(suffix='.pdf', dir=temp_dir, prefix='export_')
+        os.close(fd)
+
+        populated_pdf_path = self.pdf_manager.populate_pdf(
+            self.current_template,
+            self.current_field_values,
+            temp_pdf_path
+        )
+
+        if populated_pdf_path:
+            # Copy to final location
+            shutil.copy2(populated_pdf_path, file_path)
+            # Clean up temp file
+            try:
+                os.remove(populated_pdf_path)
+            except:
+                pass
+        else:
+            raise Exception("Failed to populate PDF")

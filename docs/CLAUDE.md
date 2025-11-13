@@ -56,7 +56,7 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 - ✅ Hide unmapped keys option
 - ✅ Auto-select text when editing labels
 - ✅ Persistent window geometry and settings
-- ✅ In-app help with USER_GUIDE.md display
+- ✅ In-app help with README.md display
 - ✅ Version display in window title and headers
 - ✅ About tab with project info and acknowledgements
 
@@ -64,7 +64,7 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 - ✅ Semantic versioning (MAJOR.MINOR.PATCH)
 - ✅ VERSION.TXT file for version tracking
 - ✅ Build scripts with automatic version incrementing
-- ✅ CHANGELOG.md for tracking changes
+- ✅ docs/CHANGELOG.md for tracking changes
 
 ## Architecture
 
@@ -140,10 +140,10 @@ deprecated/                    # Deprecated files (SVG/PNG/OCR systems)
 
 ### Making Changes
 
-1. **New Features**: Add to `[Unreleased]` in CHANGELOG.md
-2. **Bug Fixes**: Document in CHANGELOG.md
-3. **UI Changes**: Update USER_GUIDE.md if user-facing
-4. **Build Changes**: Update README.md build section
+1. **New Features**: Add to `[Unreleased]` in docs/CHANGELOG.md
+2. **Bug Fixes**: Document in docs/CHANGELOG.md
+3. **UI Changes**: Update README.md if user-facing
+4. **Build Changes**: Update docs/DEVELOPMENT.md build section
 
 ### Version Increments
 
@@ -179,10 +179,12 @@ python scripts/build/build_exe.py --increment patch
 
 ### Core Documentation
 - **VERSION.TXT** - Current version number
-- **CHANGELOG.md** - Version history and release notes
-- **README.md** - Developer documentation and build instructions
-- **USER_GUIDE.md** - End-user documentation (displayed in app)
-- **FILE_LOCATIONS.md** - File storage documentation
+- **README.md** - End-user documentation and user guide (displayed in app)
+- **docs/CHANGELOG.md** - Version history and release notes
+- **docs/DEVELOPMENT.md** - Developer documentation and build instructions
+- **docs/CLAUDE.md** - Project context and AI assistant instructions
+- **docs/FILE_LOCATIONS.md** - File storage documentation
+- **docs/RELEASE_PROCESS.md** - Release workflow and checklist
 
 ### Configuration Files
 - **label_overrides.json** - Global label defaults (bundled)
@@ -192,13 +194,14 @@ python scripts/build/build_exe.py --increment patch
 ## When Working on This Project
 
 ### Before You Start
-1. Read USER_GUIDE.md to understand user workflow
-2. Check CHANGELOG.md for recent changes and current status
+1. Read README.md to understand user workflow
+2. Check docs/CHANGELOG.md for recent changes and current status
 3. Review template_registry.json to see supported devices
+4. Read docs/DEVELOPMENT.md for development setup
 
 ### When Making Changes
-4. Update CHANGELOG.md under `[Unreleased]` section
-5. Update relevant documentation (USER_GUIDE.md, README.md, etc.)
+5. Update docs/CHANGELOG.md under `[Unreleased]` section
+6. Update relevant documentation (README.md for users, docs/DEVELOPMENT.md for developers)
 6. Test both Standard and Detailed views
 7. Verify exports work in all formats (CSV, PDF, Word, Graphics)
 8. Test label editing and persistence

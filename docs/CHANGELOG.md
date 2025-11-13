@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-11-12
+
 ### Added
 - **About tab** - New tab with project information, Osiris DevWorks placeholder, and acknowledgements:
   - GurningBoose, Hawkwar, Nazgul-Five 'Maverick', Tichro 'BreakPoint', UntoldForce
@@ -23,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed redundant "Device Graphics (SVG)" and "Device Graphics (PDF)" tabs
   - Now uses single interactive PDF viewer for all device graphics
 - **Updated tab structure** - Three tabs total: Controls Table, Device View, About
+- **Save Profile button** - Now always visible but disabled when no changes made (previously hidden)
+- **Documentation restructure** - Reorganized documentation files:
+  - README.md now serves as user guide (previously USER_GUIDE.md)
+  - Developer documentation moved to docs/DEVELOPMENT.md
+  - All .md files except README.md moved to docs/ directory
 
 ### Deprecated
 - **SVG/PNG template system** - Replaced with PDF-only system

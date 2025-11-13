@@ -6,8 +6,8 @@ This document outlines the standard process for creating a new release of SC Pro
 
 - [ ] All features for the release are complete and merged
 - [ ] Tests pass (if applicable)
-- [ ] Documentation is updated (USER_GUIDE.md, README.md)
-- [ ] CHANGELOG.md has entries for all changes
+- [ ] Documentation is updated (README.md, docs/DEVELOPMENT.md)
+- [ ] docs/CHANGELOG.md has entries for all changes
 
 ## Release Steps
 
@@ -25,7 +25,7 @@ git pull origin <feature-branch>
 Update the following files with the new version number:
 
 - `VERSION.TXT` - Update to new version (e.g., `0.2.0`)
-- `CHANGELOG.md` - Move unreleased items to new version section with date
+- `docs/CHANGELOG.md` - Move unreleased items to new version section with date
 - `installer.iss` - Update `#define MyAppVersion "X.Y.Z"`
 
 ### 3. Clean Up Repository
@@ -50,7 +50,7 @@ dir dist\SCProfileViewer.exe
 
 On the feature branch, commit all version updates:
 ```bash
-git add VERSION.TXT CHANGELOG.md installer.iss [other-files]
+git add VERSION.TXT docs/CHANGELOG.md installer.iss [other-files]
 git commit -m "Release vX.Y.Z - <Brief Description>"
 ```
 
@@ -77,9 +77,9 @@ After merging, ensure version files are correct on main:
 git checkout main
 git pull origin main
 
-# Verify VERSION.TXT, CHANGELOG.md, installer.iss are at correct version
+# Verify VERSION.TXT, docs/CHANGELOG.md, installer.iss are at correct version
 # If not, update them and commit:
-git add VERSION.TXT CHANGELOG.md installer.iss
+git add VERSION.TXT docs/CHANGELOG.md installer.iss
 git commit -m "Update version to X.Y.Z"
 git push origin main
 ```
@@ -109,7 +109,7 @@ This creates: `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
 2. **Fill in Release Information:**
    - **Tag:** vX.Y.Z (should be auto-selected)
    - **Release Title:** `SC Profile Viewer vX.Y.Z - <Brief Description>`
-   - **Description:** Use the CHANGELOG.md content for this version (see template below)
+   - **Description:** Use the docs/CHANGELOG.md content for this version (see template below)
 
 3. **Attach Build Artifacts:**
    - Upload `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
@@ -134,7 +134,7 @@ Example:
 ```
 
 The script will:
-- Parse CHANGELOG.md for the version's changes
+- Parse docs/CHANGELOG.md for the version's changes
 - Create a formatted Discord embed with release info
 - Post to the configured Discord channel
 - Skip gracefully if webhook URL is not configured
@@ -176,11 +176,11 @@ The script will:
 
 ## 📝 Full Changelog
 
-See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/docs/CHANGELOG.md) for complete version history.
 
 ---
 
-**First time using SC Profile Viewer?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/USER_GUIDE.md) to get started!
+**First time using SC Profile Viewer?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/README.md) to get started!
 ```
 
 ## Version Numbering
@@ -197,7 +197,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 - [ ] Test installer download and installation
 - [ ] Announce release (see step 11 for Discord webhook, or post manually to social media)
 - [ ] Create new development branch for next version (if needed)
-- [ ] Update CHANGELOG.md with new `[Unreleased]` section
+- [ ] Update docs/CHANGELOG.md with new `[Unreleased]` section
 
 ## Troubleshooting
 

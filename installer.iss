@@ -1,11 +1,11 @@
-; Star Citizen Profile Viewer Installer Script
+; Star Citizen Profile Editor Installer Script
 ; Created with Inno Setup
 
-#define MyAppName "Star Citizen Profile Viewer"
-#define MyAppVersion "0.2.1"
+#define MyAppName "Star Citizen Profile Editor"
+#define MyAppVersion "0.4.0"
 #define MyAppPublisher "SC Profile Tools"
-#define MyAppURL "https://github.com/yourusername/sc-profile-viewer"
-#define MyAppExeName "SCProfileViewer.exe"
+#define MyAppURL "https://github.com/yourusername/scpe-releases"
+#define MyAppExeName "SCProfileEditor.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -21,7 +21,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=LICENSE
 OutputDir=installer_output
-OutputBaseFilename=SCProfileViewer-v{#MyAppVersion}-Setup
+OutputBaseFilename=SCProfileEditor-v{#MyAppVersion}-Setup
 SetupIconFile=assets\icon.ico
 Compression=lzma
 SolidCompression=yes
@@ -38,14 +38,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "assets\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
-Source: "USER_GUIDE.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "label_overrides.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "visual-templates\*"; DestDir: "{app}\visual-templates"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "example-profiles\*"; DestDir: "{app}\example-profiles"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"
-Name: "{group}\User Guide"; Filename: "{app}\USER_GUIDE.md"
+Name: "{group}\User Guide"; Filename: "{app}\README.md"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"; Tasks: desktopicon
 
@@ -119,7 +119,7 @@ begin
   if UninstallString <> '' then
   begin
     // Show custom dialog with three options
-    ButtonPressed := MsgBox('Star Citizen Profile Viewer is already installed.' + #13#10 + #13#10 +
+    ButtonPressed := MsgBox('Star Citizen Profile Editor is already installed.' + #13#10 + #13#10 +
                             'Choose an option:' + #13#10 +
                             '  - Click YES to uninstall the old version and install this new version' + #13#10 +
                             '  - Click NO to uninstall the old version only (without installing)' + #13#10 +
