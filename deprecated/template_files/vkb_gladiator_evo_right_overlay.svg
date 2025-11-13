@@ -6,146 +6,146 @@
   </g>
   <g id="overlay-layer">
     <g>
-      <rect x="530" y="1800" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="535.0" y="1850.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 1 }}</text>
+      <rect x="530" y="1800" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="535.0" y="1850.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 1 }}</text>
     </g>
     <g>
-      <rect x="395.9" y="1898.6" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="400.9" y="1945" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.78" data-max-width="403.2" data-max-height="57.6">{{ Button 2 }}</text>
+      <rect x="395.9" y="1898.6" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="400.9" y="1945" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.78" data-max-width="403.2" data-max-height="57.6">{{ Button 2 }}</text>
     </g>
     <g>
-      <rect x="600" y="690" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="605.0" y="735.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 3 }}</text>
+      <rect x="600" y="690" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="605.0" y="735.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 3 }}</text>
     </g>
         <g>
-      <rect x="500" y="450" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <rect x="500" y="450" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
     </g>
     <g>
-      <rect x="718.5" y="1400.1" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="723.0" y="1450" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 4 }}</text>
+      <rect x="718.5" y="1400.1" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="723.0" y="1450" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 4 }}</text>
     </g>
     <g>
-      <rect x="885.9" y="1230.6" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="890.9" y="1275" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.92" data-max-width="403.2" data-max-height="57.6">{{ Button 5 }}</text>
+      <rect x="885.9" y="1230.6" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="890.9" y="1275" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.92" data-max-width="403.2" data-max-height="57.6">{{ Button 5 }}</text>
     </g>
     <g>
-      <rect x="2180.0" y="510" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2185.0" y="560.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 6 }}</text>
+      <rect x="2180.0" y="510" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2185.0" y="560.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 6 }}</text>
     </g>
     <g>
-      <rect x="2600" y="590" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2605.0" y="640.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 7 }}</text>
+      <rect x="2600" y="590" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2605.0" y="640.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 7 }}</text>
     </g>
     <g>
-      <rect x="2180.0" y="670" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2185.0" y="715.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 8 }}</text>
+      <rect x="2180.0" y="670" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2185.0" y="715.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 8 }}</text>
     </g>
     <g>
-      <rect x="1750" y="590" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="1755.0" y="640.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.85" data-max-width="403.2" data-max-height="57.6">{{ Button 9 }}</text>
+      <rect x="1750" y="590" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="1755.0" y="640.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.85" data-max-width="403.2" data-max-height="57.6">{{ Button 9 }}</text>
     </g>
     <g>
-      <rect x="2180.0" y="590" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2185.0" y="635.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 10 }}</text>
+      <rect x="2180.0" y="590" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2185.0" y="635.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 10 }}</text>
     </g>
     <g>
-      <rect x="2055.0" y="135.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2060.0" y="177.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.73" data-max-width="432.0" data-max-height="57.6">{{ Button 11 }}</text>
+      <rect x="2055.0" y="135.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2060.0" y="177.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.73" data-max-width="432.0" data-max-height="57.6">{{ Button 11 }}</text>
     </g>
     <g>
-      <rect x="2500.0" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2505.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 12 }}</text>
+      <rect x="2500.0" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2505.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 12 }}</text>
     </g>
     <g>
-      <rect x="2055.0" y="295.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2060.0" y="337.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.89" data-max-width="432.0" data-max-height="57.6">{{ Button 13 }}</text>
+      <rect x="2055.0" y="295.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2060.0" y="337.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.89" data-max-width="432.0" data-max-height="57.6">{{ Button 13 }}</text>
     </g>
     <g>
-      <rect x="1610.0" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="1615.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 14 }}</text>
+      <rect x="1610.0" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="1615.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Button 14 }}</text>
     </g>
     <g>
-      <rect x="2055.0" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2060.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6">{{ Button 15 }}</text>
+      <rect x="2055.0" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2060.0" y="257.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6">{{ Button 15 }}</text>
     </g>
     <g>
-      <rect x="2225.0" y="910" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2230.0" y="952.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.62" data-max-width="432.0" data-max-height="57.6">{{ Button 16 }}</text>
+      <rect x="2225.0" y="910" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2230.0" y="952.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.62" data-max-width="432.0" data-max-height="57.6">{{ Button 16 }}</text>
     </g>
     <g>
-      <rect x="2670.0" y="990" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2675.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.82" data-max-width="432.0" data-max-height="57.6">{{ Button 17 }}</text>
+      <rect x="2670.0" y="990" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2675.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.82" data-max-width="432.0" data-max-height="57.6">{{ Button 17 }}</text>
     </g>
     <g>
-      <rect x="2225.0" y="1070" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2230.0" y="1112.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.87" data-max-width="432.0" data-max-height="57.6">{{ Button 18 }}</text>
+      <rect x="2225.0" y="1070" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2230.0" y="1112.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.87" data-max-width="432.0" data-max-height="57.6">{{ Button 18 }}</text>
     </g>
     <g>
-      <rect x="1780.0" y="990" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="1785.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.76" data-max-width="432.0" data-max-height="57.6">{{ Button 19 }}</text>
+      <rect x="1780.0" y="990" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="1785.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.76" data-max-width="432.0" data-max-height="57.6">{{ Button 19 }}</text>
     </g>
     <g>
-      <rect x="2225.0" y="990" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2230.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6">{{ Button 20 }}</text>
+      <rect x="2225.0" y="990" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2230.0" y="1032.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6">{{ Button 20 }}</text>
     </g>
     <g>
-      <rect x="755.5" y="1584.1" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="760.5" y="1626.1" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.51" data-max-width="432.0" data-max-height="57.6">{{ Button 21 }}</text>
+      <rect x="755.5" y="1584.1" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="760.5" y="1626.1" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.51" data-max-width="432.0" data-max-height="57.6">{{ Button 21 }}</text>
     </g>
     <g>
-      <rect x="750.5" y="1671.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="755.5" y="1713.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.99" data-max-width="432.0" data-max-height="57.6">{{ Button 22 }}</text>
+      <rect x="750.5" y="1671.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="755.5" y="1713.6" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.99" data-max-width="432.0" data-max-height="57.6">{{ Button 22 }}</text>
     </g>
     <g>
-      <rect x="2490" y="1926.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2495.0" y="1975" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.98" data-max-width="432.0" data-max-height="57.6">{{ Button 23 }}</text>
+      <rect x="2490" y="1926.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2495.0" y="1975" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.98" data-max-width="432.0" data-max-height="57.6">{{ Button 23 }}</text>
     </g>
     <g>
-      <rect x="2490" y="2016.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2495.0" y="2065" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="1.00" data-max-width="432.0" data-max-height="57.6">{{ Button 24 }}</text>
+      <rect x="2490" y="2016.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2495.0" y="2065" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="1.00" data-max-width="432.0" data-max-height="57.6">{{ Button 24 }}</text>
     </g>
     <g>
-      <rect x="2145" y="2259.1" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2150.0" y="2301.1" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.92" data-max-width="432.0" data-max-height="57.6">{{ Button 25 }}</text>
+      <rect x="2145" y="2259.1" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2150.0" y="2301.1" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.92" data-max-width="432.0" data-max-height="57.6">{{ Button 25 }}</text>
     </g>
     <g>
-      <rect x="2245" y="2170" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <rect x="2245" y="2170" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
     </g>
     <g>
-      <rect x="2135" y="2349.1" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2140.0" y="2395" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.85" data-max-width="432.0" data-max-height="57.6">{{ Button 26 }}</text>
+      <rect x="2135" y="2349.1" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2140.0" y="2395" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.85" data-max-width="432.0" data-max-height="57.6">{{ Button 26 }}</text>
     </g>
     <g>
-      <rect x="2215" y="1570" width="407.2" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2220.0" y="1620.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 27 }}</text>
+      <rect x="2215" y="1570" width="407.2" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2220.0" y="1620.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="403.2" data-max-height="57.6">{{ Button 27 }}</text>
     </g>
     <g>
-      <rect x="2335" y="1700" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2340.0" y="1750.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.56" data-max-width="432.0" data-max-height="57.6">{{ Button 28 }}</text>
+      <rect x="2335" y="1700" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2340.0" y="1750.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.56" data-max-width="432.0" data-max-height="57.6">{{ Button 28 }}</text>
     </g>
     <g>
-      <rect x="2070.0" y="1450" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="2075.0" y="1500.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.88" data-max-width="432.0" data-max-height="57.6">{{ Button 29 }}</text>
+      <rect x="2070.0" y="1450" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="2075.0" y="1500.0" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.88" data-max-width="432.0" data-max-height="57.6">{{ Button 29 }}</text>
     </g>
        <g>
-      <rect x="460.0" y="135.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="465.0" y="180" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.73" data-max-width="432.0" data-max-height="57.6">{{ Hat up }}</text>
+      <rect x="460.0" y="135.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="465.0" y="180" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.73" data-max-width="432.0" data-max-height="57.6">{{ Hat up }}</text>
     </g>
     <g>
-      <rect x="905" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="910" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Hat right }}</text>
+      <rect x="905" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="910" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Hat right }}</text>
     </g>
     <g>
-      <rect x="460.0" y="295.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="465" y="340" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.89" data-max-width="432.0" data-max-height="57.6">{{ Hat down }}</text>
+      <rect x="460.0" y="295.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="465" y="340" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.89" data-max-width="432.0" data-max-height="57.6">{{ Hat down }}</text>
     </g>
     <g>
-      <rect x="15.0" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="20" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Hat left }}</text>
+      <rect x="15.0" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="20" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="0.91" data-max-width="432.0" data-max-height="57.6">{{ Hat left }}</text>
     </g>
     <g>
-      <rect x="460" y="215.6" width="436.0" height="61.6" fill="white" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
-      <text x="560.0" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="white" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6"> MODE</text>
+      <rect x="460" y="215.6" width="436.0" height="61.6" fill="black" fill-opacity="0" rx="2" stroke="black" stroke-width="2" stroke-opacity="1.0" />
+      <text x="560.0" y="260" font-family="Arial" font-size="48" fill="black" text-anchor="left" stroke="black" stroke-width="2" data-confidence="" data-max-width="432.0" data-max-height="57.6"> MODE</text>
     </g>
   </g>
 </svg>
