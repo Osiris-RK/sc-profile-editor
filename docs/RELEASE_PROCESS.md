@@ -97,27 +97,36 @@ git push origin vX.Y.Z
 cmd /c build_all.bat
 ```
 
-This creates: `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
+This creates: `installer_output/SCProfileEditor-vX.Y.Z-Setup.exe`
 
 ### 10. Create GitHub Release
 
+**⚠️ IMPORTANT:** You must COMPLETE this step (including publishing the release) BEFORE running the Discord notification in step 11. The Discord notification includes a link to the release, which must exist for users.
+
 1. **Go to GitHub Release Page:**
    ```
-   https://github.com/Osiris-RK/sc-profile-viewer/releases/new?tag=vX.Y.Z
+   https://github.com/Osiris-RK/sc-profile-editor/releases/new?tag=vX.Y.Z
    ```
 
 2. **Fill in Release Information:**
    - **Tag:** vX.Y.Z (should be auto-selected)
-   - **Release Title:** `SC Profile Viewer vX.Y.Z - <Brief Description>`
+   - **Release Title:** `SC Profile Editor vX.Y.Z - <Brief Description>`
    - **Description:** Use the docs/CHANGELOG.md content for this version (see template below)
 
 3. **Attach Build Artifacts:**
-   - Upload `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
-   - Upload `dist/SCProfileViewer.exe` (optional, as standalone)
+   - Upload `installer_output/SCProfileEditor-vX.Y.Z-Setup.exe`
+   - Upload `dist/SCProfileEditor.exe` (optional, as standalone)
 
 4. **Publish Release**
 
+5. **Verify Release is Live:**
+   - Visit the release URL to confirm it's accessible
+   - Verify download links work
+   - Only proceed to step 11 after confirmation
+
 ### 11. Post Release to Discord (Optional)
+
+**⚠️ PREREQUISITE:** The GitHub release from step 10 MUST be published and live before running this step.
 
 **Prerequisites:**
 - Set up Discord webhook URL in `.env` file (copy from `.env.example`)
@@ -125,12 +134,12 @@ This creates: `installer_output/SCProfileViewer-vX.Y.Z-Setup.exe`
 
 **Post the release:**
 ```bash
-.venv\Scripts\python.exe scripts/discord_notify.py vX.Y.Z https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/vX.Y.Z
+.venv\Scripts\python.exe scripts/discord_notify.py vX.Y.Z https://github.com/Osiris-RK/sc-profile-editor/releases/tag/vX.Y.Z
 ```
 
 Example:
 ```bash
-.venv\Scripts\python.exe scripts/discord_notify.py v0.2.1 https://github.com/Osiris-RK/sc-profile-viewer/releases/tag/v0.2.1
+.venv\Scripts\python.exe scripts/discord_notify.py v0.4.0 https://github.com/Osiris-RK/sc-profile-editor/releases/tag/v0.4.0
 ```
 
 The script will:
@@ -142,7 +151,7 @@ The script will:
 ## GitHub Release Notes Template
 
 ```markdown
-# SC Profile Viewer vX.Y.Z - <Brief Description>
+# SC Profile Editor vX.Y.Z - <Brief Description>
 
 [1-2 sentence summary of the release]
 
@@ -162,8 +171,8 @@ The script will:
 
 ## 📥 Downloads
 
-- **Installer:** [SCProfileViewer-vX.Y.Z-Setup.exe](link) - Recommended for most users
-- **Standalone:** [SCProfileViewer.exe](link) - Portable version (no installation required)
+- **Installer:** [SCProfileEditor-vX.Y.Z-Setup.exe](link) - Recommended for most users
+- **Standalone:** [SCProfileEditor.exe](link) - Portable version (no installation required)
 
 ## 📋 System Requirements
 
@@ -176,11 +185,11 @@ The script will:
 
 ## 📝 Full Changelog
 
-See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/docs/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](https://github.com/Osiris-RK/sc-profile-editor/blob/main/docs/CHANGELOG.md) for complete version history.
 
 ---
 
-**First time using SC Profile Viewer?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-viewer/blob/main/README.md) to get started!
+**First time using SC Profile Editor?** Check out the [User Guide](https://github.com/Osiris-RK/sc-profile-editor/blob/main/README.md) to get started!
 ```
 
 ## Version Numbering
