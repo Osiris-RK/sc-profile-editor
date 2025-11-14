@@ -124,7 +124,7 @@ This creates: `installer_output/SCProfileEditor-vX.Y.Z-Setup.exe`
    - Verify download links work
    - Only proceed to step 11 after confirmation
 
-### 11. Post Release to Discord (Optional)
+### 11. Post Release to Discord
 
 **⚠️ PREREQUISITE:** The GitHub release from step 10 MUST be published and live before running this step.
 
