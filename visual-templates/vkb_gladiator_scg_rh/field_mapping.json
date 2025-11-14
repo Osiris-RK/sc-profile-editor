@@ -5,8 +5,8 @@
     "_2": "Second device (right column or dual setup)"
   },
   "button_mapping": {
-    "A1_A_1": "[MODE]",
-    "A1_A_2": "[MODE]",
+    "A1_A_1": "",
+    "A1_A_2": "[ANALOG MODE SWITCH]",
     "A2_A_1": "[3]",
     "A2_A_2": 3,
     "A3_A_1": "[10]",
@@ -75,13 +75,13 @@
     "AX_Y": "y"
   },
   "hat_mapping": {
-    "A1_B_1": "hat1_up",
+    "A1_B_1": "",
     "A1_B_2": "hat1_up",
-    "A1_C_1": "hat1_down",
+    "A1_C_1": "",
     "A1_C_2": "hat1_down",
-    "A1_D_1": "hat1_left",
+    "A1_D_1": "",
     "A1_D_2": "hat1_left",
-    "A1_E_1": "hat1_right",
+    "A1_E_1": "",
     "A1_E_2": "hat1_right"
   }
 }

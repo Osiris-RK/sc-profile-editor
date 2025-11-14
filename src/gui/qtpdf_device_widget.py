@@ -500,15 +500,22 @@ class QtPdfDeviceWidget(QWidget):
             # Has custom mapping
             button_mapping = field_mapping.get('button_mapping', {})
 
-            # Remove _1 or _2 suffix if present
-            base_field_name = pdf_field_name
-            if pdf_field_name.endswith('_1') or pdf_field_name.endswith('_2'):
-                base_field_name = pdf_field_name[:-2]
+            # Try to find button number using the full field name first (for dual-device fields with _1/_2 suffix)
+            button_num = button_mapping.get(pdf_field_name)
 
-            # Find button number for this PDF field
-            button_num = button_mapping.get(base_field_name)
-            if button_num:
-                return f"js{js_num}_button{button_num}"
+            if button_num is None:
+                # If not found, try removing _1 or _2 suffix for backward compatibility
+                base_field_name = pdf_field_name
+                if pdf_field_name.endswith('_1') or pdf_field_name.endswith('_2'):
+                    base_field_name = pdf_field_name[:-2]
+                button_num = button_mapping.get(base_field_name)
+
+            if button_num is not None:
+                # Handle both string (display) and integer (mapping) button numbers
+                # Only use it if it's an integer (the actual button number)
+                if isinstance(button_num, int):
+                    return f"js{js_num}_button{button_num}"
+                # Skip string values like "[3]" as they're for display only
         else:
             # Direct mapping - PDF field should be input code
             return pdf_field_name
@@ -517,16 +524,12 @@ class QtPdfDeviceWidget(QWidget):
 
     def on_field_clicked(self, input_code: str, current_value: str):
         """Handle click on a PDF form field"""
-        # Show simplified remapping dialog
+        # Show remapping dialog with multi-action support
         try:
             from gui.remap_dialog import RemapDialog
 
             dialog = RemapDialog(input_code, self.current_profile, self)
-            dialog.binding_changed.connect(
-                lambda action_name, new_label: self.on_binding_changed_simplified(
-                    action_name, new_label
-                )
-            )
+            dialog.bindings_changed.connect(self.on_bindings_changed)
             dialog.exec()
         except Exception as e:
             logger.error(f"Error showing remap dialog: {e}", exc_info=True)
@@ -536,29 +539,10 @@ class QtPdfDeviceWidget(QWidget):
                 f"Failed to open remapping dialog:\n{str(e)}"
             )
 
-    def on_binding_changed_simplified(self, action_name: str, new_label: str):
-        """Handle changes from the simplified remapping dialog"""
-        # Find the binding by action name
-        binding = None
-        for action_map in self.current_profile.action_maps:
-            for b in action_map.actions:
-                if b.action_name == action_name:
-                    binding = b
-                    break
-            if binding:
-                break
-
-        if not binding:
-            logger.error(f"Could not find binding for action: {action_name}")
+    def on_bindings_changed(self, bindings: list):
+        """Handle changes to multiple bindings from the remapping dialog"""
+        if not bindings:
             return
-
-        # Update custom label
-        if new_label:
-            self.update_binding_label(binding, new_label)
-        else:
-            # Revert to default
-            default_label = LabelGenerator.generate_action_label(binding.action_name)
-            self.update_binding_label(binding, default_label)
 
         # Mark profile as modified
         if self.current_profile:
@@ -575,7 +559,7 @@ class QtPdfDeviceWidget(QWidget):
         # Notify parent to update table and window title
         self.notify_profile_changed()
 
-        logger.info(f"Updated binding: {binding.action_name} with label '{new_label}'")
+        logger.info(f"Updated {len(bindings)} binding(s)")
 
     def find_binding_by_input_code(self, input_code: str):
         """Find binding object by input code"""
