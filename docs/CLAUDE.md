@@ -8,9 +8,9 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 
 ## Current Status
 
-**Version:** 0.2.1 (released October 28, 2025)
-**Current Branch:** v0.3.0-more-device-support (active development)
-**Status:** Stable release with expanded device support
+**Version:** 0.4.0 (released November 12, 2025)
+**Current Branch:** v0.4.1-vkb-refinement (active development)
+**Status:** Stable release with PDF-based device templates and expanded VKB support
 **Platform:** Windows (PyInstaller executable)
 
 ## Implemented Features
@@ -30,7 +30,8 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 
 ### Device Graphics
 - ✅ Interactive PDF-based template system for device visualization
-- ✅ Browser-like editing with QtWebEngine
+- ✅ Native QtPdf rendering (lightweight, no browser engine)
+- ✅ Clickable PDF fields for easy label editing
 - ✅ Automatic label mapping to device buttons/controls
 - ✅ Supported devices (multiple VKB, VPC, Thrustmaster templates)
   - VKB Gladiator (EVO and SCG variants)
@@ -42,6 +43,15 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
   - VPC MongoosT-50CM3 (Right)
   - Thrustmaster TWCS Throttle
 - ✅ Device splitter utility for composite devices (e.g., stick + SEM module)
+
+### Input Detection
+- ✅ "Detect Input" button in RemapDialog for automatic input binding
+- ✅ Joystick button detection via python-dinput
+- ✅ Joystick axis and POV/hat switch detection
+- ✅ Keyboard key detection via pynput
+- ✅ Mouse button click detection via pynput
+- ✅ 10-second timeout with cancel option
+- ✅ Thread-safe implementation with Qt signals
 
 ### Label System
 - ✅ Three-tier label priority: Custom > Global > Auto-generated
@@ -70,10 +80,13 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 
 ### Technology Stack
 - **Python 3.12+** - Core language
-- **PyQt6** - GUI framework
+- **PyQt6** - GUI framework with native QtPdf for PDF viewing
 - **python-docx** - Word document generation
 - **reportlab** - PDF generation
+- **PyMuPDF (fitz)** - PDF manipulation and form field handling
 - **Pillow** - Image processing
+- **python-dinput** - Windows joystick/gamepad input detection
+- **pynput** - Keyboard and mouse input detection
 - **PyInstaller** - Executable packaging
 
 ### Project Structure
@@ -82,7 +95,9 @@ src/
 ├── main.py                    # Application entry point
 ├── gui/                       # PyQt6 GUI components
 │   ├── main_window.py        # Main window with tabs and exports
-│   └── webengine_pdf_widget.py # Interactive PDF device viewer
+│   ├── qtpdf_device_widget.py # Interactive PDF device viewer (QtPdf-based)
+│   ├── remap_dialog.py       # Dialog for editing button assignments with input detection
+│   └── webengine_pdf_widget.py # [DEPRECATED] Removed in v0.5.0
 ├── parser/                    # XML parsing and label generation
 │   ├── xml_parser.py         # SC profile XML parser
 │   └── label_generator.py    # Human-readable label generator
@@ -91,7 +106,8 @@ src/
 │   └── pdf_template_manager.py # PDF template loader
 ├── models/                    # Data models for profiles and bindings
 └── utils/                     # Utilities (settings, overrides, version)
-    └── device_splitter.py    # Split composite devices
+    ├── device_splitter.py    # Split composite devices
+    └── input_detector.py     # Input detection for joystick, keyboard, mouse
 
 visual-templates/              # Device template resources
 ├── template_registry.json    # Template configuration
@@ -119,13 +135,23 @@ deprecated/                    # Deprecated files (SVG/PNG/OCR systems)
 
 2. **Device Template System**
    - PDF-based templates with interactive form fields
-   - QtWebEngine for browser-like PDF viewing and editing
+   - QtPdf for native PDF rendering (lightweight, no Chromium)
+   - PyMuPDF for PDF manipulation and field access
    - JSON registry (`template_registry.json`) for device matching
    - Pattern-based device name matching (supports multiple patterns per device)
    - Automatic button range detection and mapping
    - Composite device support via device splitter utility
+   - Clickable PDF fields open RemapDialog for action assignment
 
-3. **Build Configuration**
+3. **Input Detection System**
+   - Detects joystick buttons, axes, and POV/hat switches via python-dinput
+   - Detects keyboard keys via pynput
+   - Detects mouse buttons via pynput
+   - Integrated into RemapDialog for convenient input binding
+   - 10-second timeout with cancel option
+   - Thread-safe with Qt signal/slot architecture
+
+4. **Build Configuration**
    - Single standard build for all users
    - Version incrementing via `--increment` flag
    - PyInstaller for Windows executable generation
@@ -153,10 +179,44 @@ deprecated/                    # Deprecated files (SVG/PNG/OCR systems)
 
 ### Building
 
+#### Build Executable Only
+
 ```bash
-# Standard build
+# Build without version increment
+python scripts/build/build_exe.py
+
+# Build and increment patch version (0.4.0 -> 0.4.1)
 python scripts/build/build_exe.py --increment patch
+
+# Build and increment minor version (0.4.0 -> 0.5.0)
+python scripts/build/build_exe.py --increment minor
+
+# Build and increment major version (0.4.0 -> 1.0.0)
+python scripts/build/build_exe.py --increment major
 ```
+
+**Output:** `dist/SCProfileEditor.exe`
+
+#### Build Installer Only (requires Inno Setup)
+
+```bash
+# Build installer (requires dist/SCProfileEditor.exe to exist)
+cmd //c scripts\build\build_installer.bat
+```
+
+**Prerequisites:** Inno Setup 6 installed (download from https://jrsoftware.org/isdl.php)
+**Output:** `installer_output/SCProfileEditor-v{version}-Setup.exe`
+
+#### Build Everything (Executable + Installer)
+
+```bash
+# Build both executable and installer in one go
+cmd //c scripts\build\build_all.bat
+```
+
+**Output:**
+- `dist/SCProfileEditor.exe`
+- `installer_output/SCProfileEditor-v{version}-Setup.exe`
 
 ## Known Issues & Limitations
 

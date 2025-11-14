@@ -37,7 +37,7 @@ from utils.settings import AppSettings
 from utils.version import get_version
 from utils.device_splitter import get_device_for_input
 
-# Try to import PDF widget - prefer QtPdf (native, lightweight) over WebEngine
+# Import PDF widget - QtPdf is the only PDF viewer (WebEngine removed to reduce installer size)
 PDF_WIDGET_AVAILABLE = False
 PDF_WIDGET_CLASS = None
 
@@ -47,17 +47,9 @@ try:
     PDF_WIDGET_AVAILABLE = True
     logger.info("Using QtPdf for device view (native Qt PDF viewer)")
 except ImportError as e:
-    logger.warning(f"QtPdf widget not available: {e}")
-    # Fallback to WebEngine if QtPdf not available
-    try:
-        from gui.webengine_pdf_widget import WebEnginePDFWidget
-        PDF_WIDGET_CLASS = WebEnginePDFWidget
-        PDF_WIDGET_AVAILABLE = True
-        logger.info("Using WebEngine for device view (Chromium-based)")
-    except ImportError as e2:
-        PDF_WIDGET_AVAILABLE = False
-        logger.warning(f"WebEngine also not available: {e2}")
-        logger.error("No PDF widget available - Device View will be disabled")
+    PDF_WIDGET_AVAILABLE = False
+    logger.error(f"QtPdf widget not available: {e}")
+    logger.error("Device View will be disabled")
 
 
 class SelectAllDelegate(QStyledItemDelegate):

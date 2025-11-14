@@ -1,13 +1,15 @@
 """
 Input detection module for capturing joystick, keyboard, and mouse inputs
 
-This module uses pygame to detect and identify controller inputs for button remapping.
+This module uses python-dinput for joystick/gamepad detection and pynput
+for keyboard and mouse input detection.
 """
 
 import logging
-import pygame
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from PyQt6.QtCore import QThread, pyqtSignal
+import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -25,57 +27,101 @@ class InputDetectorThread(QThread):
         super().__init__()
         self.timeout_ms = timeout_ms
         self.running = False
-        self.pygame_initialized = False
+        self.joystick_state: Dict[int, Dict] = {}  # Track joystick axis state for threshold detection
 
     def run(self):
         """Run the input detection loop"""
         try:
-            # Initialize pygame if not already done
-            if not self.pygame_initialized:
-                pygame.init()
-                pygame.joystick.init()
-                self.pygame_initialized = True
-
-            # Initialize all connected joysticks
-            joysticks = []
-            for i in range(pygame.joystick.get_count()):
-                joystick = pygame.joystick.Joystick(i)
-                joystick.init()
-                joysticks.append(joystick)
-                logger.info(f"Initialized joystick {i}: {joystick.get_name()}")
-
-            if len(joysticks) == 0:
-                logger.warning("No joysticks detected")
-
             self.running = True
-            clock = pygame.time.Clock()
-            elapsed_time = 0
+            start_time = time.time()
+            elapsed_ms = 0
+            last_detected_joystick = None
+            last_detected_keyboard_listener = None
+            last_detected_mouse_listener = None
+
+            # Start joystick detection thread
+            joystick_detected = threading.Event()
+            joystick_result = {"code": None, "description": None}
+
+            joystick_thread = threading.Thread(
+                target=self._detect_joystick,
+                args=(joystick_detected, joystick_result),
+                daemon=True
+            )
+            joystick_thread.start()
+
+            # Start keyboard detection listener
+            keyboard_detected = threading.Event()
+            keyboard_result = {"code": None, "description": None}
+
+            try:
+                from pynput import keyboard
+                keyboard_listener = keyboard.Listener(
+                    on_press=lambda key: self._on_keyboard_press(key, keyboard_detected, keyboard_result)
+                )
+                keyboard_listener.start()
+            except Exception as e:
+                logger.warning(f"Could not start keyboard listener: {e}")
+                keyboard_listener = None
+
+            # Start mouse detection listener
+            mouse_detected = threading.Event()
+            mouse_result = {"code": None, "description": None}
+
+            try:
+                from pynput import mouse
+                mouse_listener = mouse.Listener(
+                    on_click=lambda x, y, button, pressed: self._on_mouse_click(button, pressed, mouse_detected, mouse_result)
+                )
+                mouse_listener.start()
+            except Exception as e:
+                logger.warning(f"Could not start mouse listener: {e}")
+                mouse_listener = None
 
             # Detection loop
-            while self.running and elapsed_time < self.timeout_ms:
-                # Process pygame events
-                for event in pygame.event.get():
-                    input_code, description = self._process_event(event)
-                    if input_code:
-                        logger.info(f"Detected input: {input_code} - {description}")
-                        self.input_detected.emit(input_code, description)
+            while self.running and elapsed_ms < self.timeout_ms:
+                # Check for joystick input
+                if joystick_detected.is_set():
+                    if joystick_result["code"]:
+                        logger.info(f"Detected joystick input: {joystick_result['code']} - {joystick_result['description']}")
+                        self.input_detected.emit(joystick_result["code"], joystick_result["description"])
                         self.running = False
-                        return
+                        break
 
-                # Check for significant axis movements (not event-based)
-                for js_idx, joystick in enumerate(joysticks):
-                    input_code, description = self._check_axes(joystick, js_idx + 1)
-                    if input_code:
-                        logger.info(f"Detected axis: {input_code} - {description}")
-                        self.input_detected.emit(input_code, description)
+                # Check for keyboard input
+                if keyboard_detected.is_set():
+                    if keyboard_result["code"]:
+                        logger.info(f"Detected keyboard input: {keyboard_result['code']} - {keyboard_result['description']}")
+                        self.input_detected.emit(keyboard_result["code"], keyboard_result["description"])
                         self.running = False
-                        return
+                        break
 
-                # Wait and update elapsed time
-                clock.tick(30)  # 30 FPS
-                elapsed_time += 1000 / 30
+                # Check for mouse input
+                if mouse_detected.is_set():
+                    if mouse_result["code"]:
+                        logger.info(f"Detected mouse input: {mouse_result['code']} - {mouse_result['description']}")
+                        self.input_detected.emit(mouse_result["code"], mouse_result["description"])
+                        self.running = False
+                        break
 
-            # Timeout or cancelled
+                # Update elapsed time and sleep
+                time.sleep(0.05)  # 50ms polling interval
+                elapsed_ms = (time.time() - start_time) * 1000
+
+            # Clean up listeners
+            if keyboard_listener:
+                try:
+                    keyboard_listener.stop()
+                except:
+                    pass
+
+            if mouse_listener:
+                try:
+                    mouse_listener.stop()
+                except:
+                    pass
+
+            # Timeout
             if self.running:
                 logger.info("Input detection timed out")
                 self.detection_cancelled.emit()
@@ -87,94 +133,199 @@ class InputDetectorThread(QThread):
         finally:
             self.running = False
 
-    def _process_event(self, event) -> Tuple[Optional[str], Optional[str]]:
-        """Process a pygame event and return input code if detected"""
+    def _detect_joystick(self, detected_event, result_dict):
+        """Detect joystick input in a separate thread"""
+        try:
+            import dinput
 
-        # Joystick button press
-        if event.type == pygame.JOYBUTTONDOWN:
-            js_num = event.joy + 1
-            button_num = event.button + 1
-            input_code = f"js{js_num}_button{button_num}"
-            description = f"Joystick {js_num} Button {button_num}"
-            return input_code, description
+            # Get list of devices
+            devices = dinput.get_joysticks()
 
-        # Joystick hat movement
-        elif event.type == pygame.JOYHATMOTION:
-            js_num = event.joy + 1
-            hat_num = event.hat + 1
-            hat_value = event.value
+            if not devices:
+                logger.warning("No joysticks detected")
+                return
 
-            # Determine direction
-            direction = None
-            if hat_value[1] == 1:
-                direction = "up"
-            elif hat_value[1] == -1:
-                direction = "down"
-            elif hat_value[0] == -1:
-                direction = "left"
-            elif hat_value[0] == 1:
-                direction = "right"
+            logger.info(f"Found {len(devices)} joystick(s)")
 
-            if direction:
-                input_code = f"js{js_num}_hat{hat_num}_{direction}"
-                description = f"Joystick {js_num} Hat {hat_num} {direction.upper()}"
-                return input_code, description
+            # Create joystick objects
+            joysticks = []
+            for i, device_guid in enumerate(devices):
+                try:
+                    joystick = dinput.Joystick(device_guid)
+                    joystick.open()
+                    joysticks.append((i + 1, joystick))  # 1-indexed for SC
+                    logger.info(f"Initialized joystick {i + 1}")
+                except Exception as e:
+                    logger.warning(f"Could not initialize joystick {i}: {e}")
 
-        # Keyboard key press
-        elif event.type == pygame.KEYDOWN:
-            key_name = pygame.key.name(event.key)
-            # Map pygame key names to Star Citizen format
+            if not joysticks:
+                return
+
+            # Joystick detection loop
+            start_time = time.time()
+            axis_state = {}  # Track previous axis values to detect significant changes
+
+            while self.running and (time.time() - start_time) * 1000 < self.timeout_ms:
+                try:
+                    for js_num, joystick in joysticks:
+                        try:
+                            # Update state
+                            joystick.update()
+                            state = joystick.state
+
+                            # Check buttons
+                            if hasattr(state, 'buttons') and state.buttons:
+                                for button_idx, button_pressed in enumerate(state.buttons):
+                                    if button_pressed:
+                                        input_code = f"js{js_num}_button{button_idx + 1}"
+                                        result_dict["code"] = input_code
+                                        result_dict["description"] = f"Joystick {js_num} Button {button_idx + 1}"
+                                        detected_event.set()
+                                        return
+
+                            # Check POV/hat switches
+                            if hasattr(state, 'pov') and state.pov is not None and state.pov >= 0:
+                                # POV is in degrees: 0=up, 9000=right, 18000=down, 27000=left
+                                # -1 or 65535 means not pressed
+                                if state.pov < 36000:  # Valid POV value
+                                    if state.pov == 0:
+                                        direction = "up"
+                                    elif state.pov == 9000:
+                                        direction = "right"
+                                    elif state.pov == 18000:
+                                        direction = "down"
+                                    elif state.pov == 27000:
+                                        direction = "left"
+                                    else:
+                                        # Diagonal - use closest direction
+                                        if state.pov < 4500:
+                                            direction = "up"
+                                        elif state.pov < 13500:
+                                            direction = "right"
+                                        elif state.pov < 22500:
+                                            direction = "down"
+                                        else:
+                                            direction = "left"
+
+                                    input_code = f"js{js_num}_hat1_{direction}"
+                                    result_dict["code"] = input_code
+                                    result_dict["description"] = f"Joystick {js_num} Hat 1 {direction.upper()}"
+                                    detected_event.set()
+                                    return
+
+                            # Check axes (with threshold for analog sticks)
+                            axis_names = {
+                                0: "x",       # X axis (left stick horizontal)
+                                1: "y",       # Y axis (left stick vertical)
+                                2: "z",       # Z axis (right stick horizontal, or throttle)
+                                3: "rotz",    # Rotation Z (right stick vertical)
+                                4: "rotx",    # Rotation X (twist)
+                                5: "roty",    # Rotation Y
+                                6: "slider1", # Slider 1
+                                7: "slider2", # Slider 2
+                            }
+
+                            if hasattr(state, 'lX'):
+                                axes = [
+                                    state.lX if hasattr(state, 'lX') else 0,
+                                    state.lY if hasattr(state, 'lY') else 0,
+                                    state.lZ if hasattr(state, 'lZ') else 0,
+                                    state.lRz if hasattr(state, 'lRz') else 0,
+                                    state.lRx if hasattr(state, 'lRx') else 0,
+                                    state.lRy if hasattr(state, 'lRy') else 0,
+                                ]
+
+                                # Normalize axes from -32768 to 32767 to -1.0 to 1.0
+                                threshold = 0.5
+                                for axis_idx, raw_value in enumerate(axes):
+                                    # Normalize
+                                    if raw_value > 0:
+                                        normalized_value = raw_value / 32767.0
+                                    else:
+                                        normalized_value = raw_value / 32768.0
+
+                                    # Check if significant movement
+                                    if abs(normalized_value) > threshold:
+                                        axis_name = axis_names.get(axis_idx, f"axis{axis_idx}")
+                                        direction = "+" if normalized_value > 0 else "-"
+                                        input_code = f"js{js_num}_{axis_name}"
+                                        result_dict["code"] = input_code
+                                        result_dict["description"] = f"Joystick {js_num} {axis_name.upper()} ({direction})"
+                                        detected_event.set()
+                                        return
+
+                        except Exception as e:
+                            logger.debug(f"Error checking joystick {js_num}: {e}")
+                            continue
+
+                    time.sleep(0.05)  # 50ms polling interval
+
+                except Exception as e:
+                    logger.debug(f"Error in joystick detection loop: {e}")
+                    time.sleep(0.05)
+
+        except ImportError:
+            logger.error("python-dinput not installed. Joystick detection unavailable.")
+        except Exception as e:
+            logger.error(f"Error in joystick detection: {e}", exc_info=True)
+
+    def _on_keyboard_press(self, key, detected_event, result_dict):
+        """Handle keyboard key press (callback from pynput)"""
+        try:
+            from pynput.keyboard import Key
+
+            if not self.running:
+                return False  # Stop listener
+
+            # Get key name
+            try:
+                if isinstance(key, Key):
+                    # Special keys
+                    key_name = key.name
+                else:
+                    # Regular character keys
+                    key_name = key.char if hasattr(key, 'char') else str(key)
+            except AttributeError:
+                key_name = str(key)
+
+            # Map to Star Citizen format
             input_code = f"kb1_{key_name}"
-            description = f"Keyboard {key_name.upper()}"
-            return input_code, description
+            result_dict["code"] = input_code
+            result_dict["description"] = f"Keyboard {key_name.upper()}"
+            detected_event.set()
+            return False  # Stop listener
 
-        # Mouse button press
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            button = event.button
-            if button <= 3:  # Left, middle, right
-                input_code = f"mouse{button}"
-                button_names = {1: "Left", 2: "Middle", 3: "Right"}
-                description = f"Mouse {button_names.get(button, button)}"
-                return input_code, description
-            elif button == 4:
-                input_code = "mwheel_up"
-                description = "Mouse Wheel Up"
-                return input_code, description
-            elif button == 5:
-                input_code = "mwheel_down"
-                description = "Mouse Wheel Down"
-                return input_code, description
+        except Exception as e:
+            logger.debug(f"Error handling keyboard press: {e}")
+            return True  # Continue listening
 
-        return None, None
+    def _on_mouse_click(self, button, pressed, detected_event, result_dict):
+        """Handle mouse button click (callback from pynput)"""
+        try:
+            from pynput.mouse import Button
 
-    def _check_axes(self, joystick, js_num: int, threshold: float = 0.5) -> Tuple[Optional[str], Optional[str]]:
-        """Check for significant axis movements"""
-        num_axes = joystick.get_numaxes()
+            if not self.running or not pressed:
+                return True  # Continue listening
 
-        # Common axis mappings (Star Citizen format)
-        axis_names = {
-            0: "x",       # X axis (left stick horizontal)
-            1: "y",       # Y axis (left stick vertical)
-            2: "z",       # Z axis (right stick horizontal, or throttle)
-            3: "rotz",    # Rotation Z (right stick vertical)
-            4: "rotx",    # Rotation X (twist)
-            5: "roty",    # Rotation Y
-            6: "slider1", # Slider 1
-            7: "slider2", # Slider 2
-        }
+            # Get button name
+            button_names = {
+                Button.left: ("mouse1", "Mouse Left"),
+                Button.middle: ("mouse2", "Mouse Middle"),
+                Button.right: ("mouse3", "Mouse Right"),
+            }
 
-        for axis_idx in range(num_axes):
-            value = joystick.get_axis(axis_idx)
+            if button in button_names:
+                input_code, description = button_names[button]
+                result_dict["code"] = input_code
+                result_dict["description"] = description
+                detected_event.set()
+                return False  # Stop listener
 
-            # Check if axis moved significantly
-            if abs(value) > threshold:
-                axis_name = axis_names.get(axis_idx, f"axis{axis_idx}")
-                input_code = f"js{js_num}_{axis_name}"
-                direction = "+" if value > 0 else "-"
-                description = f"Joystick {js_num} {axis_name.upper()} ({direction})"
-                return input_code, description
+            return True  # Continue listening
 
-        return None, None
+        except Exception as e:
+            logger.debug(f"Error handling mouse click: {e}")
+            return True  # Continue listening
 
     def stop(self):
         """Stop the detection loop"""
@@ -202,6 +353,7 @@ class InputDetector:
             self.thread.wait()
 
         self.thread = InputDetectorThread(timeout_ms)
+        self.thread.start()
         return self.thread
 
     def stop_detection(self):
@@ -216,22 +368,37 @@ class InputDetector:
         devices = []
 
         try:
-            pygame.init()
-            pygame.joystick.init()
-
-            # Add keyboard and mouse (always available)
+            # Keyboard and mouse are always available
             devices.append({"type": "keyboard", "instance": 1, "name": "Keyboard"})
             devices.append({"type": "mouse", "instance": 1, "name": "Mouse"})
 
             # Add joysticks
-            for i in range(pygame.joystick.get_count()):
-                joystick = pygame.joystick.Joystick(i)
-                joystick.init()
-                devices.append({
-                    "type": "joystick",
-                    "instance": i + 1,
-                    "name": joystick.get_name()
-                })
+            try:
+                import dinput
+                joystick_guids = dinput.get_joysticks()
+
+                for i, guid in enumerate(joystick_guids):
+                    try:
+                        joystick = dinput.Joystick(guid)
+                        joystick.open()
+                        devices.append({
+                            "type": "joystick",
+                            "instance": i + 1,
+                            "name": f"Joystick {i + 1}"
+                        })
+                        joystick.close()
+                    except Exception as e:
+                        logger.debug(f"Could not open joystick {i}: {e}")
+                        devices.append({
+                            "type": "joystick",
+                            "instance": i + 1,
+                            "name": f"Joystick {i + 1} (unavailable)"
+                        })
+
+            except ImportError:
+                logger.warning("python-dinput not available, joystick detection skipped")
+            except Exception as e:
+                logger.error(f"Error detecting joysticks: {e}", exc_info=True)
 
         except Exception as e:
             logger.error(f"Error getting devices: {e}", exc_info=True)

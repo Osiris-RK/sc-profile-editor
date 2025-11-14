@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Input detection feature** - Users can now detect inputs with a "Detect Input" button in the remap dialog:
+  - Automatically detects joystick button presses and axis movements
+  - Detects keyboard key presses
+  - Detects mouse button clicks
+  - Supports 10-second detection timeout with cancel option
+  - Uses lightweight python-dinput (joystick) and pynput (keyboard/mouse) libraries
+
+### Changed
+- **Dependency updates** - Replaced pygame with lighter alternatives:
+  - Removed: pygame (20-30 MB)
+  - Added: python-dinput (~2 MB) for Windows joystick detection
+  - Added: pynput (~3 MB) for keyboard and mouse detection
+- **Removed WebEngine modules** - Dropped unused Chromium-based PDF viewer:
+  - Removed QtWebEngine and QtWebChannel from build (saves ~150 MB)
+  - Application now uses QtPdf exclusively for PDF viewing
+  - Reduced installer size from 256 MB to ~110 MB (57% reduction!)
+- **Build optimization** - Excluded 25+ unused Qt6 modules:
+  - Removed: QtTest, QtSql, QtBluetooth, QtNfc, Qt3D*, QtCharts, QtDataVisualization, QtMultimedia, QtPositioning, QtSensors, QtSerialPort, QtSvg, QtQuick, QtQml, QtHelp, QtDesigner, QtDBus, QtRemoteObjects, QtWebSockets, QtLocation, QtOpenGL
+
+### Removed
+- **Deleted webengine_pdf_widget.py** - No longer needed after WebEngine removal
+- **Removed pygame dependency** - Was not actually used by the application
+
+---
+
 ## [0.4.0] - 2025-11-12
 
 ### Added

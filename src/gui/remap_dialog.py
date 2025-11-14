@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from models.profile_model import ActionBinding, ControlProfile
 from parser.label_generator import LabelGenerator
 from utils.input_validator import InputValidator
+from utils.input_detector import InputDetector
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,11 @@ class RemapDialog(QDialog):
         self.actions_by_map = {}
         self.action_map_friendly_names = {}
         self._build_action_maps()
+
+        # Input detection setup
+        self.input_detector = InputDetector()
+        self.detecting_input = False
+        self.detect_timer = None
 
         self.setWindowTitle("Edit Button Assignment")
         self.setMinimumWidth(600)
@@ -73,12 +79,21 @@ class RemapDialog(QDialog):
         header_label.setFont(header_font)
         layout.addWidget(header_label)
 
-        # Show input description
+        # Show input description with detect button
+        input_desc_layout = QHBoxLayout()
         input_desc = InputValidator.get_input_description(self.input_code)
         desc_label = QLabel(f"Input: {input_desc}")
-        desc_label.setStyleSheet("color: #666; font-size: 10px; margin-bottom: 10px;")
-        layout.addWidget(desc_label)
+        desc_label.setStyleSheet("color: #666; font-size: 10px;")
+        self.desc_label = desc_label  # Store for updating
+        input_desc_layout.addWidget(desc_label)
+        input_desc_layout.addStretch()
 
+        self.detect_input_btn = QPushButton("Detect Input")
+        self.detect_input_btn.setMaximumWidth(150)
+        self.detect_input_btn.clicked.connect(self.on_detect_input_clicked)
+        input_desc_layout.addWidget(self.detect_input_btn)
+
+        layout.addLayout(input_desc_layout)
         layout.addSpacing(10)
 
         # === LABEL EDITING SECTION ===
@@ -327,3 +342,66 @@ class RemapDialog(QDialog):
 
         # Accept dialog
         self.accept()
+
+    def on_detect_input_clicked(self):
+        """Handle Detect Input button click"""
+        if self.detecting_input:
+            # Stop detection
+            self.input_detector.stop_detection()
+            self.detecting_input = False
+            self.detect_input_btn.setText("Detect Input")
+            self.detect_input_btn.setEnabled(True)
+            self._disable_controls(False)
+            logger.info("Input detection cancelled")
+        else:
+            # Start detection
+            self.detecting_input = True
+            self.detect_input_btn.setText("Listening... (Cancel)")
+            self._disable_controls(True)
+            logger.info("Starting input detection")
+
+            # Start input detection
+            detector_thread = self.input_detector.start_detection(timeout_ms=10000)
+            detector_thread.input_detected.connect(self.on_input_detected)
+            detector_thread.detection_cancelled.connect(self.on_input_detection_timeout)
+
+    def on_input_detected(self, input_code: str, description: str):
+        """Handle detected input"""
+        logger.info(f"Input detected: {input_code} - {description}")
+
+        # Update the stored input code
+        self.input_code = input_code
+
+        # Update the UI
+        self.desc_label.setText(f"Input: {description}")
+
+        # Stop detection and re-enable controls
+        self.detecting_input = False
+        self.detect_input_btn.setText("Detect Input")
+        self._disable_controls(False)
+
+    def on_input_detection_timeout(self):
+        """Handle input detection timeout"""
+        logger.info("Input detection timed out")
+
+        # Show warning message
+        QMessageBox.warning(
+            self,
+            "No Input Detected",
+            "No input was detected within 10 seconds.\n\nPlease try again."
+        )
+
+        # Stop detection and re-enable controls
+        self.detecting_input = False
+        self.detect_input_btn.setText("Detect Input")
+        self._disable_controls(False)
+
+    def _disable_controls(self, disable: bool):
+        """Enable/disable all controls except the detect button"""
+        self.label_edit.setEnabled(not disable)
+        self.action_map_combo.setEnabled(not disable)
+        self.action_combo.setEnabled(not disable)
+        # Dialog buttons
+        for child in self.findChildren(QPushButton):
+            if child != self.detect_input_btn:
+                child.setEnabled(not disable)

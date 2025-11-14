@@ -6,7 +6,8 @@ python-docx>=1.1.0          # Word document generation
 reportlab>=4.0.0            # PDF generation
 PyMuPDF>=1.26.0             # PDF manipulation and form field handling
 Pillow>=10.1.0              # Image manipulation and graphics
-pygame>=2.5.0               # Input detection for button remapping
+python-dinput>=1.0.0        # Windows joystick/gamepad input detection
+pynput>=1.7.0               # Keyboard and mouse input detection
 
 # Optional Dependencies - DEPRECATED (No longer needed)
 # OCR dependencies were used for SVG template development (now deprecated)
