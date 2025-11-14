@@ -10,7 +10,7 @@ import os
 import logging
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QMessageBox, QGraphicsView, QGraphicsScene,
-                              QGraphicsPixmapItem, QInputDialog)
+                              QGraphicsPixmapItem, QInputDialog, QPushButton, QSizePolicy)
 from PyQt6.QtGui import QPainter
 from PyQt6.QtCore import Qt, pyqtSignal, QRectF
 
@@ -47,6 +47,22 @@ class InteractivePDFGraphicsView(QGraphicsView):
         """Re-fit the view when resized"""
         super().resizeEvent(event)
         if self._fit_on_resize and self.scene() and not self.scene().sceneRect().isEmpty():
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+
+    def zoom_in(self):
+        """Zoom in by 25%"""
+        self._fit_on_resize = False  # Disable auto-fit when manually zooming
+        self.scale(1.25, 1.25)
+
+    def zoom_out(self):
+        """Zoom out by 20%"""
+        self._fit_on_resize = False  # Disable auto-fit when manually zooming
+        self.scale(0.8, 0.8)
+
+    def fit_to_window(self):
+        """Fit the view to the window and re-enable auto-fit"""
+        self._fit_on_resize = True
+        if self.scene() and not self.scene().sceneRect().isEmpty():
             self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
     def mousePressEvent(self, event):
@@ -101,6 +117,27 @@ class QtPdfDeviceWidget(QWidget):
         selection_layout.addWidget(self.device_combo, 1)
 
         layout.addLayout(selection_layout)
+
+        # Zoom controls
+        zoom_layout = QHBoxLayout()
+
+        zoom_in_btn = QPushButton("Zoom In")
+        zoom_in_btn.setMaximumWidth(100)
+        zoom_in_btn.clicked.connect(lambda: self.view.zoom_in())
+        zoom_layout.addWidget(zoom_in_btn)
+
+        zoom_out_btn = QPushButton("Zoom Out")
+        zoom_out_btn.setMaximumWidth(100)
+        zoom_out_btn.clicked.connect(lambda: self.view.zoom_out())
+        zoom_layout.addWidget(zoom_out_btn)
+
+        fit_btn = QPushButton("Fit to Window")
+        fit_btn.setMaximumWidth(120)
+        fit_btn.clicked.connect(lambda: self.view.fit_to_window())
+        zoom_layout.addWidget(fit_btn)
+
+        zoom_layout.addStretch()
+        layout.addLayout(zoom_layout)
 
         # Graphics view (interactive)
         self.scene = QGraphicsScene()

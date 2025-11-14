@@ -1,5 +1,5 @@
 {
-  "comment": "Button and axis mapping for vkb_thq_ww2",
+  "comment": "Button and axis mapping for vkb_thq",
   "device_columns": {
     "_1": "First device (left column or single device)",
     "_2": "Second device (right column or dual setup)"
@@ -20,19 +20,7 @@
     "CBUT_C1_1": "",
     "CBUT_C1_2": 0,
     "CBUT_C2_1": "",
-    "CBUT_C2_2": 0,
-    "WW2_ButBlack_1": "",
-    "WW2_ButBlack_2": 0,
-    "WW2_ButRed_1": "",
-    "WW2_ButRed_2": 0,
-    "WW2_Front_Left_1": "",
-    "WW2_Front_Left_2": 0,
-    "WW2_Front_Right_1": "",
-    "WW2_Front_Right_2": 0,
-    "WW2_Rocker_Down_1": "",
-    "WW2_Rocker_Down_2": 0,
-    "WW2_Rocker_Up_1": "",
-    "WW2_Rocker_Up_2": 0
+    "CBUT_C2_2": 0
   },
   "axis_mapping": {
     "AX_L": "x",
