@@ -10,9 +10,9 @@ import os
 import logging
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QMessageBox, QGraphicsView, QGraphicsScene,
-                              QGraphicsPixmapItem, QInputDialog, QPushButton, QSizePolicy)
-from PyQt6.QtGui import QPainter
-from PyQt6.QtCore import Qt, pyqtSignal, QRectF
+                              QGraphicsPixmapItem, QInputDialog, QPushButton, QSizePolicy, QToolTip)
+from PyQt6.QtGui import QPainter, QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QTimer
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -37,11 +37,28 @@ class InteractivePDFGraphicsView(QGraphicsView):
         self._fit_on_resize = True
         self.field_regions = {}  # input_code -> QRectF (in scene coordinates)
         self.field_values = {}  # input_code -> current_value
+        self.full_labels = {}  # input_code -> list of action labels (for tooltips)
 
-    def set_field_regions(self, field_regions: dict, field_values: dict):
+        # Tooltip delay support
+        try:
+            self.setMouseTracking(True)  # Enable mouseMoveEvent
+            self.tooltip_timer = QTimer()
+            self.tooltip_timer.setSingleShot(True)
+            self.tooltip_timer.timeout.connect(self._show_delayed_tooltip)
+            self.pending_tooltip_input_code = None
+            self.pending_tooltip_labels = None
+            self.pending_tooltip_pos = None
+            self.current_hover_field = None
+            logger.debug("Tooltip support initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing tooltip support: {e}", exc_info=True)
+
+    def set_field_regions(self, field_regions: dict, field_values: dict, full_labels: dict = None):
         """Set clickable field regions"""
         self.field_regions = field_regions
         self.field_values = field_values
+        self.full_labels = full_labels or {}  # Store full labels for tooltips
+        logger.debug(f"set_field_regions called with {len(field_regions)} regions and full_labels: {bool(full_labels)}")
 
     def resizeEvent(self, event):
         """Re-fit the view when resized"""
@@ -65,6 +82,56 @@ class InteractivePDFGraphicsView(QGraphicsView):
         if self.scene() and not self.scene().sceneRect().isEmpty():
             self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
+    def mouseMoveEvent(self, event):
+        """Handle mouse movement for tooltip display"""
+        try:
+            logger.debug(f"mouseMoveEvent at {event.pos()}")
+
+            # Map view coordinates to scene coordinates
+            scene_pos = self.mapToScene(event.pos())
+
+            # Check if hovering over any field
+            hovered_field = None
+            for input_code, rect in self.field_regions.items():
+                if rect.contains(scene_pos):
+                    hovered_field = input_code
+                    break
+
+            logger.debug(f"Found hovered_field: {hovered_field}, current_hover_field: {self.current_hover_field}")
+
+            # If we changed fields, update the tooltip timer
+            if hovered_field != self.current_hover_field:
+                logger.debug(f"Hover changed from {self.current_hover_field} to {hovered_field}")
+                self.current_hover_field = hovered_field
+                self.tooltip_timer.stop()
+
+                if hovered_field:
+                    # Check if this field has multiple actions
+                    labels = self.full_labels.get(hovered_field, [])
+                    logger.debug(f"Hovering over {hovered_field}, {len(labels)} labels: {labels}")
+
+                    if len(labels) > 1:
+                        logger.debug(f"Starting tooltip timer for {hovered_field}")
+                        # Store tooltip info and start timer
+                        self.pending_tooltip_input_code = hovered_field
+                        self.pending_tooltip_labels = labels
+                        # Use globalPosition() in PyQt6 (not globalPos())
+                        self.pending_tooltip_pos = event.globalPosition().toPoint()
+
+                        # Start timer for 1-second delay
+                        self.tooltip_timer.start(1000)
+                else:
+                    logger.debug("Not over any field")
+        except Exception as e:
+            logger.error(f"Error in mouseMoveEvent: {e}", exc_info=True)
+
+    def leaveEvent(self, event):
+        """Handle mouse leaving the view"""
+        logger.debug("Mouse left view, stopping tooltip timer")
+        self.tooltip_timer.stop()
+        self.current_hover_field = None
+        super().leaveEvent(event)
+
     def mousePressEvent(self, event):
         """Handle mouse clicks to detect field clicks"""
         if event.button() == Qt.MouseButton.LeftButton:
@@ -81,6 +148,45 @@ class InteractivePDFGraphicsView(QGraphicsView):
 
         # Default handling for non-field clicks
         super().mousePressEvent(event)
+
+    def _show_delayed_tooltip(self):
+        """Show the tooltip after the delay expires"""
+        logger.debug(f"Tooltip timer expired, showing tooltip for {self.pending_tooltip_input_code}")
+        logger.debug(f"Pending labels: {self.pending_tooltip_labels}")
+
+        if self.pending_tooltip_input_code and self.pending_tooltip_labels and self.pending_tooltip_pos:
+            # Format tooltip text - extract button number from input code
+            # Convert "js1_button5" to "Button 5", "js1_hat1_down" to "HAT1 Down", etc.
+            input_code = self.pending_tooltip_input_code
+            if "js" in input_code:
+                # Remove the "jsX_" prefix to get the button part
+                parts = input_code.split("_", 1)  # Split on first underscore
+                if len(parts) == 2:
+                    button_part = parts[1]  # Get everything after "jsX_"
+                    # Format nicely
+                    if button_part.startswith("button"):
+                        button_name = "Button " + button_part.replace("button", "")
+                    elif button_part.startswith("hat"):
+                        button_name = button_part.upper()
+                    elif button_part.startswith("axis"):
+                        button_name = button_part.upper()
+                    else:
+                        button_name = button_part.upper()
+                else:
+                    button_name = input_code
+            else:
+                button_name = input_code
+
+            tooltip_lines = [button_name + ":"]
+            for label in self.pending_tooltip_labels:
+                tooltip_lines.append(f"• {label}")
+            tooltip_text = "\n".join(tooltip_lines)
+
+            logger.debug(f"Showing tooltip: {tooltip_text}")
+            # Show tooltip at the stored position
+            QToolTip.showText(self.pending_tooltip_pos, tooltip_text, self)
+        else:
+            logger.warning(f"Tooltip data incomplete: input_code={self.pending_tooltip_input_code}, labels={self.pending_tooltip_labels}, pos={self.pending_tooltip_pos}")
 
 
 class QtPdfDeviceWidget(QWidget):
@@ -357,8 +463,9 @@ class QtPdfDeviceWidget(QWidget):
             pixmap_item = QGraphicsPixmapItem(pixmap)
             self.scene.addItem(pixmap_item)
 
-            # Set clickable field regions in the view
-            self.view.set_field_regions(field_regions, field_value_map)
+            # Set clickable field regions in the view (with full labels for tooltips)
+            full_labels = getattr(self, 'field_full_labels', {})
+            self.view.set_field_regions(field_regions, field_value_map, full_labels)
 
             # Fit view to scene
             self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -376,50 +483,71 @@ class QtPdfDeviceWidget(QWidget):
         """Get PDF form field values for the current device"""
         field_values = {}
 
-        if not self.current_device or not self.current_profile or not self.device_mapper:
+        try:
+            if not self.current_device or not self.current_profile or not self.device_mapper:
+                logger.warning("Missing current_device, current_profile, or device_mapper")
+                return field_values
+
+            # Get joystick index for this device
+            js_index = self.device_mapper.get_js_index_for_device(self.current_device.product_name or "")
+
+            if js_index is None:
+                logger.warning(f"No JS index found for device: {self.current_device.product_name}")
+                return field_values
+
+            # Extract JS number
+            js_num = js_index.replace("js", "")
+            logger.debug(f"Processing device with JS number: {js_num}")
+
+            # Get all bindings for this device
+            device_bindings = self.get_device_bindings()
+            logger.debug(f"Found {len(device_bindings)} device bindings")
+
+            # Group bindings by input code
+            from collections import defaultdict
+            grouped_bindings = defaultdict(list)
+
+            for action_map_name, binding in device_bindings:
+                input_code = binding.input_code.strip()
+                if input_code and input_code.startswith(f"js{js_num}_"):
+                    grouped_bindings[input_code].append((action_map_name, binding))
+
+            logger.debug(f"Grouped into {len(grouped_bindings)} input codes")
+
+            # Create field values map
+            for input_code, bindings in grouped_bindings.items():
+                try:
+                    # Get action labels
+                    action_labels = []
+                    for action_map_name, binding in bindings:
+                        action_label = LabelGenerator.get_action_label(binding.action_name, binding)
+                        action_labels.append(action_label)
+
+                    # Remove duplicates
+                    unique_labels = list(dict.fromkeys(action_labels))
+                    logger.debug(f"{input_code}: {len(action_labels)} actions -> {len(unique_labels)} unique: {unique_labels}")
+
+                    # Store full labels for tooltip display
+                    if not hasattr(self, 'field_full_labels'):
+                        self.field_full_labels = {}
+                    self.field_full_labels[input_code] = unique_labels
+
+                    # Truncate labels for PDF display
+                    display_label = self._truncate_labels(unique_labels)
+                    logger.debug(f"{input_code}: truncated to '{display_label}'")
+
+                    # Store in field values
+                    field_values[input_code] = display_label
+                except Exception as e:
+                    logger.error(f"Error processing input_code {input_code}: {e}", exc_info=True)
+                    field_values[input_code] = ""
+
+            logger.debug(f"Generated {len(field_values)} field values for device")
             return field_values
 
-        # Get joystick index for this device
-        js_index = self.device_mapper.get_js_index_for_device(self.current_device.product_name or "")
-
-        if js_index is None:
-            logger.warning(f"No JS index found for device: {self.current_device.product_name}")
+        except Exception as e:
+            logger.error(f"Error in get_field_values_for_device: {e}", exc_info=True)
             return field_values
-
-        # Extract JS number
-        js_num = js_index.replace("js", "")
-
-        # Get all bindings for this device
-        device_bindings = self.get_device_bindings()
-
-        # Group bindings by input code
-        from collections import defaultdict
-        grouped_bindings = defaultdict(list)
-
-        for action_map_name, binding in device_bindings:
-            input_code = binding.input_code.strip()
-            if input_code and input_code.startswith(f"js{js_num}_"):
-                grouped_bindings[input_code].append((action_map_name, binding))
-
-        # Create field values map
-        for input_code, bindings in grouped_bindings.items():
-            # Get action labels
-            action_labels = []
-            for action_map_name, binding in bindings:
-                action_label = LabelGenerator.get_action_label(binding.action_name, binding)
-                action_labels.append(action_label)
-
-            # Remove duplicates
-            unique_labels = list(dict.fromkeys(action_labels))
-
-            # Join multiple actions
-            combined_label = ' / '.join(unique_labels)
-
-            # Store in field values
-            field_values[input_code] = combined_label
-
-        logger.debug(f"Generated {len(field_values)} field values for device")
-        return field_values
 
     def get_device_bindings(self) -> list:
         """Get all bindings for the current device"""
@@ -436,6 +564,88 @@ class QtPdfDeviceWidget(QWidget):
                     bindings.append((action_map.name, binding))
 
         return bindings
+
+    def _truncate_labels(self, labels: list, max_width: int = 30) -> str:
+        """
+        Truncate action labels to fit in PDF field while always showing the first action.
+
+        Requirements:
+        - Always display the first label (truncate if needed to fit (+N) suffix)
+        - If there are more labels, add (+N) suffix showing count of remaining
+        - If single label is too long, truncate it rather than downsizing
+        - For multiple labels, show first label and any additional that fit, with (+N) for rest
+
+        Args:
+            labels: List of action label strings
+            max_width: Maximum characters for the display string
+
+        Returns:
+            Formatted string with first label and optional (+N) suffix
+        """
+        if not labels:
+            logger.debug(f"_truncate_labels: empty labels, returning ''")
+            return ""
+
+        if len(labels) == 1:
+            # Single label - truncate if needed but don't downsize
+            label = labels[0]
+            if len(label) <= max_width:
+                logger.debug(f"_truncate_labels: 1 label fits: '{label}'")
+                return label
+            else:
+                # Truncate with ellipsis
+                truncated = label[:max_width - 3] + "..."
+                logger.debug(f"_truncate_labels: 1 label too long, truncated to: '{truncated}'")
+                return truncated
+
+        # Multiple labels - show first, then as many additional as fit, with count indicator
+        separator = ' / '
+        indicator_prefix = " (+"
+        indicator_suffix = ")"
+
+        # Start with the first label
+        first_label = labels[0]
+        displayed = [first_label]
+        current_length = len(first_label)
+
+        logger.debug(f"_truncate_labels: {len(labels)} labels, starting with first: '{first_label}'")
+
+        # Try to add more labels after the first one
+        for i in range(1, len(labels)):
+            label = labels[i]
+            # How many labels would remain after this one?
+            remaining_after = len(labels) - i - 1
+            # Build the indicator for remaining labels
+            indicator = f"{indicator_prefix}{remaining_after + 1}{indicator_suffix}" if remaining_after > 0 else ""
+            indicator_len = len(indicator)
+
+            # Would adding this label fit with the indicator?
+            test_length = current_length + len(separator) + len(label)
+
+            logger.debug(f"_truncate_labels: trying label {i}: '{label}' (test_length={test_length}, indicator_len={indicator_len}, limit={max_width})")
+
+            if test_length + indicator_len <= max_width:
+                # It fits! Add it to display
+                displayed.append(label)
+                current_length = test_length
+                logger.debug(f"_truncate_labels: added label {i}")
+            else:
+                # Doesn't fit, stop adding more
+                logger.debug(f"_truncate_labels: label {i} doesn't fit, stopping")
+                break
+
+        # Build final result
+        result = separator.join(displayed)
+        remaining = len(labels) - len(displayed)
+
+        if remaining > 0:
+            # Add indicator for remaining labels
+            result += f"{indicator_prefix}{remaining}{indicator_suffix}"
+            logger.debug(f"_truncate_labels: final result: '{result}' ({remaining} more)")
+        else:
+            logger.debug(f"_truncate_labels: final result: '{result}' (all shown)")
+
+        return result
 
     def get_field_regions(self, template: PDFDeviceTemplate, dpi: int = 150):
         """Get field regions from PDF for click detection"""
