@@ -45,10 +45,26 @@ class InteractivePDFGraphicsView(QGraphicsView):
             self.tooltip_timer = QTimer()
             self.tooltip_timer.setSingleShot(True)
             self.tooltip_timer.timeout.connect(self._show_delayed_tooltip)
+
+            # Tooltip minimum display timer - keeps tooltip visible for at least 2 seconds
+            self.tooltip_display_timer = QTimer()
+            self.tooltip_display_timer.setSingleShot(True)
+            self.tooltip_display_timer.timeout.connect(self._hide_tooltip)
+
             self.pending_tooltip_input_code = None
             self.pending_tooltip_labels = None
             self.pending_tooltip_pos = None
             self.current_hover_field = None
+            self.tooltip_minimum_display_ms = 2000  # Minimum 2 seconds to display tooltip
+            self.tooltip_visible = False  # Track if tooltip is currently visible
+
+            # Grace period timer - ignores field changes for 500ms after tooltip appears
+            self.tooltip_grace_period_timer = QTimer()
+            self.tooltip_grace_period_timer.setSingleShot(True)
+            self.tooltip_grace_period_timer.timeout.connect(self._end_grace_period)
+            self.in_grace_period = False  # Track if we're in the grace period
+            self.tooltip_grace_period_ms = 500  # 500ms grace period
+
             logger.debug("Tooltip support initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing tooltip support: {e}", exc_info=True)
@@ -85,7 +101,7 @@ class InteractivePDFGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event):
         """Handle mouse movement for tooltip display"""
         try:
-            logger.debug(f"mouseMoveEvent at {event.pos()}")
+            logger.debug(f"mouseMoveEvent at {event.pos()}, in_grace_period: {self.in_grace_period}")
 
             # Map view coordinates to scene coordinates
             scene_pos = self.mapToScene(event.pos())
@@ -99,11 +115,21 @@ class InteractivePDFGraphicsView(QGraphicsView):
 
             logger.debug(f"Found hovered_field: {hovered_field}, current_hover_field: {self.current_hover_field}")
 
+            # If we're in grace period, ignore field changes (prevent race condition)
+            if self.in_grace_period and hovered_field == self.current_hover_field:
+                logger.debug("In grace period, ignoring mouse movement on same field")
+                return
+
             # If we changed fields, update the tooltip timer
             if hovered_field != self.current_hover_field:
                 logger.debug(f"Hover changed from {self.current_hover_field} to {hovered_field}")
                 self.current_hover_field = hovered_field
                 self.tooltip_timer.stop()
+                self.tooltip_display_timer.stop()
+                self.tooltip_visible = False
+                self.in_grace_period = False
+                self.tooltip_grace_period_timer.stop()
+                QToolTip.hideText()
 
                 if hovered_field:
                     # Check if this field has multiple actions
@@ -118,8 +144,8 @@ class InteractivePDFGraphicsView(QGraphicsView):
                         # Use globalPosition() in PyQt6 (not globalPos())
                         self.pending_tooltip_pos = event.globalPosition().toPoint()
 
-                        # Start timer for 1-second delay
-                        self.tooltip_timer.start(1000)
+                        # Start timer for 1.5-second delay (gives mouse time to settle)
+                        self.tooltip_timer.start(1500)
                 else:
                     logger.debug("Not over any field")
         except Exception as e:
@@ -127,9 +153,15 @@ class InteractivePDFGraphicsView(QGraphicsView):
 
     def leaveEvent(self, event):
         """Handle mouse leaving the view"""
-        logger.debug("Mouse left view, stopping tooltip timer")
+        logger.debug("Mouse left view, stopping tooltip timers")
         self.tooltip_timer.stop()
+        self.tooltip_display_timer.stop()
+        self.tooltip_grace_period_timer.stop()
         self.current_hover_field = None
+        self.tooltip_visible = False
+        self.in_grace_period = False
+        QToolTip.hideText()
+
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):
@@ -185,8 +217,29 @@ class InteractivePDFGraphicsView(QGraphicsView):
             logger.debug(f"Showing tooltip: {tooltip_text}")
             # Show tooltip at the stored position
             QToolTip.showText(self.pending_tooltip_pos, tooltip_text, self)
+
+            # Mark tooltip as visible and start minimum display timer
+            # This prevents hiding if user moves away during the first 2 seconds
+            self.tooltip_visible = True
+            self.tooltip_display_timer.start(self.tooltip_minimum_display_ms)
+
+            # Start grace period - ignores mouse movements for 500ms to prevent race condition
+            self.in_grace_period = True
+            self.tooltip_grace_period_timer.start(self.tooltip_grace_period_ms)
+
+            logger.debug(f"Tooltip visible, started minimum display timer for {self.tooltip_minimum_display_ms}ms and grace period for {self.tooltip_grace_period_ms}ms")
         else:
             logger.warning(f"Tooltip data incomplete: input_code={self.pending_tooltip_input_code}, labels={self.pending_tooltip_labels}, pos={self.pending_tooltip_pos}")
+
+    def _hide_tooltip(self):
+        """Allow tooltip to be hidden after minimum display time has expired"""
+        logger.debug("Minimum display time expired, tooltip can now be hidden on mouse movement")
+        self.tooltip_visible = False
+
+    def _end_grace_period(self):
+        """End the grace period after tooltip appears"""
+        logger.debug("Grace period ended, now responding to mouse movements")
+        self.in_grace_period = False
 
 
 class QtPdfDeviceWidget(QWidget):
