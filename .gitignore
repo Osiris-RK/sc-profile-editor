@@ -47,6 +47,9 @@ htmlcov/
 .pytest_cache/
 /CLAUDE.md
 /.claude/
+# But allow logs and commands for cross-machine sessions
+!/.claude/logs/
+!/.claude/commands/
 
 # Custom label overrides (user-specific)
 label_overrides_custom.json
