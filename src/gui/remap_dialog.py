@@ -7,8 +7,9 @@ import os
 import logging
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                               QLineEdit, QComboBox, QGroupBox, QMessageBox,
-                              QFormLayout, QDialogButtonBox, QScrollArea, QWidget)
-from PyQt6.QtCore import Qt, pyqtSignal
+                              QFormLayout, QDialogButtonBox, QScrollArea, QWidget, QListWidget,
+                              QListWidgetItem, QCompleter)
+from PyQt6.QtCore import Qt, pyqtSignal, QStringListModel
 from PyQt6.QtGui import QFont
 
 # Add parent directory to path
@@ -23,20 +24,25 @@ logger = logging.getLogger(__name__)
 
 
 class SearchableComboBox(QComboBox):
-    """ComboBox with searchable/filterable dropdown"""
+    """ComboBox with substring-based filtering dropdown"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Just make it editable - Qt handles filtering automatically with editable comboboxes
+        # Make it editable for typing
         self.setEditable(True)
 
-        # Store items and their data for retrieval
+        # Store all items and their data
+        self.all_items = []  # List of (text, userData) tuples
         self.items_data = {}  # Map from text to userData
+
+        # Connect text changed to filter dropdown
+        self.lineEdit().textChanged.connect(self._on_text_changed)
 
     def addItem(self, text, userData=None):
         """Add item with optional user data"""
         super().addItem(text, userData)
+        self.all_items.append((text, userData))
         self.items_data[text] = userData
 
     def addItems(self, items):
@@ -48,7 +54,7 @@ class SearchableComboBox(QComboBox):
         """Get data for current item"""
         current_text = self.currentText()
 
-        # First try exact match from our mapping
+        # Try exact match from our mapping
         if current_text in self.items_data:
             return self.items_data[current_text]
 
@@ -58,7 +64,39 @@ class SearchableComboBox(QComboBox):
     def clear(self):
         """Clear all items"""
         super().clear()
+        self.all_items.clear()
         self.items_data.clear()
+
+    def _on_text_changed(self, text):
+        """Filter the dropdown based on text input"""
+        # Don't filter if text is empty - show all
+        if not text.strip():
+            # Show all items
+            self.setMaxCount(len(self.all_items) + 10)
+            super().clear()
+            for item_text, userData in self.all_items:
+                super().addItem(item_text, userData)
+            return
+
+        # Filter items based on substring match (case-insensitive)
+        filtered_items = [
+            (item_text, userData)
+            for item_text, userData in self.all_items
+            if text.lower() in item_text.lower()
+        ]
+
+        # Update the dropdown with filtered items
+        self.blockSignals(True)
+        super().clear()
+
+        for item_text, userData in filtered_items:
+            super().addItem(item_text, userData)
+
+        self.blockSignals(False)
+
+        # Show the dropdown if there are matches
+        if filtered_items:
+            self.showPopup()
 
 
 class ActionAssignmentWidget(QWidget):
