@@ -10,25 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.1] - 2025-11-18
 
 ### Added
-- **Searchable dropdown menus** - Action category and action dropdowns in remap dialog now support substring filtering:
-  - Users can scroll dropdown and start typing to filter options
-  - Case-insensitive substring matching (e.g., type "weapon" to find "Spaceship Weapons")
-  - Standard Qt filtering behavior for familiar user experience
+- **Multi-action button tooltips** - Buttons with multiple actions now display a tooltip showing all assigned actions
 - **Enhanced action list in BLANK profile** - Added 564 missing actions from other profiles:
   - Profile now includes all 621 actions across 39 action maps
   - Enables full action discovery when mapping buttons in any profile
+- **Action label truncation** - Long action labels in table view are now truncated with ellipsis when they exceed cell width
+  - Allows viewing full label by hovering over truncated text
 
 ### Fixed
 - **Fixed rebind warning for unbound actions** - Unbound actions (with input ending in underscore like "js1_ ") no longer trigger rebind confirmation dialog:
   - Only shows warning when action is actually bound to a different input
   - Uses `rstrip()` to properly detect unbound actions with trailing whitespace
-- **Fixed infinite loop in dropdown filtering** - Removed problematic custom filtering that was causing crashes:
-  - Simplified to use native Qt dropdown filtering
-  - Eliminated recursive textChanged signal loops
-- **Improved stability** - Added comprehensive debug logging throughout SearchableComboBox and RemapDialog for better crash diagnostics
+- **Improved stability** - Added comprehensive debug logging throughout RemapDialog for better crash diagnostics
 
 ### Changed
 - **BLANK profile renamed** - Changed from `layout_BLANK_exported.xml` to `blank.xml` for consistency
+- **Tooltip behavior tuning** - Improved multi-action button tooltip display and duplicate mapping handling
 
 ---
 
