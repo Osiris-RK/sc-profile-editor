@@ -7,9 +7,8 @@ import os
 import logging
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
                               QLineEdit, QComboBox, QGroupBox, QMessageBox,
-                              QFormLayout, QDialogButtonBox, QScrollArea, QWidget, QListWidget,
-                              QListWidgetItem, QCompleter)
-from PyQt6.QtCore import Qt, pyqtSignal, QStringListModel
+                              QFormLayout, QDialogButtonBox, QScrollArea, QWidget)
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 # Add parent directory to path
@@ -24,20 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 class SearchableComboBox(QComboBox):
-    """ComboBox with substring-based filtering dropdown"""
+    """ComboBox that makes the dropdown searchable with standard filtering behavior"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
-        # Make it editable for typing
-        self.setEditable(True)
-
-        # Store all items and their data
+        # Store all items and their data for search/filtering
         self.all_items = []  # List of (text, userData) tuples
         self.items_data = {}  # Map from text to userData
-
-        # Connect text changed to filter dropdown
-        self.lineEdit().textChanged.connect(self._on_text_changed)
         logger.debug("SearchableComboBox initialized")
 
     def addItem(self, text, userData=None):
@@ -79,7 +71,7 @@ class SearchableComboBox(QComboBox):
             raise
 
     def itemData(self, index):
-        """Override itemData to handle filtered items"""
+        """Override itemData to handle items"""
         try:
             logger.debug(f"itemData called: index={index}, count={super().count()}")
             if index < 0 or index >= super().count():
@@ -104,44 +96,6 @@ class SearchableComboBox(QComboBox):
             logger.debug("clear completed successfully")
         except Exception as e:
             logger.error(f"Error in clear: {e}", exc_info=True)
-            raise
-
-    def _on_text_changed(self, text):
-        """Filter the dropdown based on text input"""
-        try:
-            logger.debug(f"_on_text_changed called: text='{text}'")
-
-            # Don't filter if text is empty or if we only have the placeholder item
-            if not text.strip() or len(self.all_items) == 0:
-                logger.debug(f"Not filtering - text empty or no items. Items: {len(self.all_items)}")
-                return
-
-            # Filter items based on substring match (case-insensitive)
-            filtered_items = [
-                (item_text, userData)
-                for item_text, userData in self.all_items
-                if text.lower() in item_text.lower()
-            ]
-            logger.debug(f"Filtered to {len(filtered_items)} items from {len(self.all_items)} (search: '{text}')")
-
-            # Update the dropdown with filtered items
-            self.blockSignals(True)
-            try:
-                super().clear()
-
-                for item_text, userData in filtered_items:
-                    super().addItem(item_text, userData)
-
-                logger.debug(f"Updated dropdown with {len(filtered_items)} filtered items")
-            finally:
-                self.blockSignals(False)
-
-            # Show the dropdown if there are matches
-            if filtered_items:
-                logger.debug("Showing popup")
-                self.showPopup()
-        except Exception as e:
-            logger.error(f"Error in _on_text_changed: {e}", exc_info=True)
             raise
 
 
