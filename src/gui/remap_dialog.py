@@ -378,8 +378,9 @@ class RemapDialog(QDialog):
             return
 
         # Check if action is already bound elsewhere
-        # Only show rebind warning if the action is bound to a different input (input doesn't end with underscore)
-        is_bound = selected_binding.input_code and not selected_binding.input_code.endswith('_')
+        # Only show rebind warning if the action is bound to a different input
+        # Unbound actions have input ending with underscore (e.g., "js1_ " or "js1_")
+        is_bound = selected_binding.input_code and not selected_binding.input_code.rstrip().endswith('_')
         if is_bound and selected_binding.input_code != self.input_code:
             reply = QMessageBox.question(
                 self,
