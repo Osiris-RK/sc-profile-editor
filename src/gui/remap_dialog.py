@@ -61,6 +61,13 @@ class SearchableComboBox(QComboBox):
         # Fall back to standard implementation
         return super().currentData(role)
 
+    def itemData(self, index):
+        """Override itemData to handle filtered items"""
+        if index < 0 or index >= super().count():
+            return None
+        text = super().itemText(index)
+        return self.items_data.get(text, None)
+
     def clear(self):
         """Clear all items"""
         super().clear()
