@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBut
                               QFormLayout, QDialogButtonBox, QScrollArea, QWidget)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
+from PyQt6.QtCore import QSortFilterProxyModel, QTimer
+from PyQt6.QtGui import QStandardItemModel, QStandardItem
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -20,6 +22,62 @@ from utils.input_validator import InputValidator
 from utils.input_detector import InputDetector
 
 logger = logging.getLogger(__name__)
+
+
+class SearchableComboBox(QComboBox):
+    """ComboBox with searchable/filterable dropdown"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Set up the model and proxy model for filtering
+        self.source_model = QStandardItemModel()
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.source_model)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.proxy_model.setFilterKeyColumn(-1)  # Search all columns
+
+        # Enable editable mode and set the model
+        self.setModel(self.proxy_model)
+        self.setEditable(True)
+
+        # Store data for items (text -> data mapping)
+        self.item_data = {}
+
+        # Connect text changed to filter
+        self.lineEdit().textChanged.connect(self._on_filter_text_changed)
+
+    def addItem(self, text, userData=None):
+        """Add item with optional user data"""
+        item = QStandardItem(text)
+        self.source_model.appendRow(item)
+
+        # Store the data
+        self.item_data[text] = userData
+
+    def addItems(self, items):
+        """Add multiple items (list of strings)"""
+        for text in items:
+            self.addItem(text)
+
+    def currentData(self, role=Qt.ItemDataRole.UserRole):
+        """Get data for current item"""
+        current_text = self.currentText()
+        return self.item_data.get(current_text, None)
+
+    def clear(self):
+        """Clear all items"""
+        self.source_model.clear()
+        self.item_data.clear()
+
+    def _on_filter_text_changed(self, text):
+        """Filter items based on text"""
+        self.proxy_model.setFilterWildcard(text)
+
+    def setCurrentIndex(self, index):
+        """Set current index"""
+        if index >= 0 and index < self.count():
+            super().setCurrentIndex(index)
 
 
 class ActionAssignmentWidget(QWidget):
@@ -223,7 +281,7 @@ class RemapDialog(QDialog):
         # Action map category selection
         category_layout = QFormLayout()
 
-        self.action_map_combo = QComboBox()
+        self.action_map_combo = SearchableComboBox()
         self.action_map_combo.addItem("-- Select Action Category --", None)
         self.action_map_combo.addItem("ALL", "ALL")
 
@@ -235,7 +293,7 @@ class RemapDialog(QDialog):
         category_layout.addRow("Action Category:", self.action_map_combo)
 
         # Action selection (filtered by category)
-        self.action_combo = QComboBox()
+        self.action_combo = SearchableComboBox()
         self.action_combo.addItem("-- Select Action --", None)
         self.action_combo.setEnabled(False)
         category_layout.addRow("Action:", self.action_combo)
