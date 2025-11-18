@@ -8,9 +8,9 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 
 ## Current Status
 
-**Version:** 0.5.0 (released November 14, 2025)
-**Current Branch:** v0.4.1-vkb-refinement (active development)
-**Status:** Stable release with input detection feature and massive installer size reduction (57%)
+**Version:** 0.5.1 (released November 18, 2025)
+**Current Branch:** v0.5.1-fixes (active development)
+**Status:** Stable release with searchable dropdowns, enhanced BLANK profile, and improved stability
 **Platform:** Windows (PyInstaller executable)
 
 ## Implemented Features
@@ -69,6 +69,7 @@ SC Profile Editor is a desktop application for Star Citizen players to edit, cus
 - ✅ In-app help with README.md display
 - ✅ Version display in window title and headers
 - ✅ About tab with project info and acknowledgements
+- ✅ Searchable dropdowns in remap dialog (substring matching with native Qt filtering)
 
 ### Version Management
 - ✅ Semantic versioning (MAJOR.MINOR.PATCH)
