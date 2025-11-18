@@ -38,72 +38,111 @@ class SearchableComboBox(QComboBox):
 
         # Connect text changed to filter dropdown
         self.lineEdit().textChanged.connect(self._on_text_changed)
+        logger.debug("SearchableComboBox initialized")
 
     def addItem(self, text, userData=None):
         """Add item with optional user data"""
-        super().addItem(text, userData)
-        self.all_items.append((text, userData))
-        self.items_data[text] = userData
+        try:
+            logger.debug(f"addItem called: text='{text}', userData={userData}")
+            super().addItem(text, userData)
+            self.all_items.append((text, userData))
+            self.items_data[text] = userData
+            logger.debug(f"Item added successfully. Total items: {len(self.all_items)}")
+        except Exception as e:
+            logger.error(f"Error in addItem: {e}", exc_info=True)
+            raise
 
     def addItems(self, items):
         """Add multiple items (list of strings)"""
+        logger.debug(f"addItems called with {len(items)} items")
         for text in items:
             self.addItem(text)
 
     def currentData(self, role=Qt.ItemDataRole.UserRole):
         """Get data for current item"""
-        current_text = self.currentText()
+        try:
+            current_text = self.currentText()
+            logger.debug(f"currentData called: currentText='{current_text}'")
 
-        # Try exact match from our mapping
-        if current_text in self.items_data:
-            return self.items_data[current_text]
+            # Try exact match from our mapping
+            if current_text in self.items_data:
+                data = self.items_data[current_text]
+                logger.debug(f"Returning data from items_data: {data}")
+                return data
 
-        # Fall back to standard implementation
-        return super().currentData(role)
+            # Fall back to standard implementation
+            data = super().currentData(role)
+            logger.debug(f"Returning data from super(): {data}")
+            return data
+        except Exception as e:
+            logger.error(f"Error in currentData: {e}", exc_info=True)
+            raise
 
     def itemData(self, index):
         """Override itemData to handle filtered items"""
-        if index < 0 or index >= super().count():
-            return None
-        text = super().itemText(index)
-        return self.items_data.get(text, None)
+        try:
+            logger.debug(f"itemData called: index={index}, count={super().count()}")
+            if index < 0 or index >= super().count():
+                logger.debug(f"Index {index} out of bounds")
+                return None
+            text = super().itemText(index)
+            logger.debug(f"itemText at index {index}: '{text}'")
+            data = self.items_data.get(text, None)
+            logger.debug(f"itemData returning: {data}")
+            return data
+        except Exception as e:
+            logger.error(f"Error in itemData: {e}", exc_info=True)
+            raise
 
     def clear(self):
         """Clear all items"""
-        super().clear()
-        self.all_items.clear()
-        self.items_data.clear()
+        try:
+            logger.debug(f"clear called. Current items: {len(self.all_items)}")
+            super().clear()
+            self.all_items.clear()
+            self.items_data.clear()
+            logger.debug("clear completed successfully")
+        except Exception as e:
+            logger.error(f"Error in clear: {e}", exc_info=True)
+            raise
 
     def _on_text_changed(self, text):
         """Filter the dropdown based on text input"""
-        # Don't filter if text is empty - show all
-        if not text.strip():
-            # Show all items
-            self.setMaxCount(len(self.all_items) + 10)
-            super().clear()
-            for item_text, userData in self.all_items:
-                super().addItem(item_text, userData)
-            return
+        try:
+            logger.debug(f"_on_text_changed called: text='{text}'")
 
-        # Filter items based on substring match (case-insensitive)
-        filtered_items = [
-            (item_text, userData)
-            for item_text, userData in self.all_items
-            if text.lower() in item_text.lower()
-        ]
+            # Don't filter if text is empty or if we only have the placeholder item
+            if not text.strip() or len(self.all_items) == 0:
+                logger.debug(f"Not filtering - text empty or no items. Items: {len(self.all_items)}")
+                return
 
-        # Update the dropdown with filtered items
-        self.blockSignals(True)
-        super().clear()
+            # Filter items based on substring match (case-insensitive)
+            filtered_items = [
+                (item_text, userData)
+                for item_text, userData in self.all_items
+                if text.lower() in item_text.lower()
+            ]
+            logger.debug(f"Filtered to {len(filtered_items)} items from {len(self.all_items)} (search: '{text}')")
 
-        for item_text, userData in filtered_items:
-            super().addItem(item_text, userData)
+            # Update the dropdown with filtered items
+            self.blockSignals(True)
+            try:
+                super().clear()
 
-        self.blockSignals(False)
+                for item_text, userData in filtered_items:
+                    super().addItem(item_text, userData)
 
-        # Show the dropdown if there are matches
-        if filtered_items:
-            self.showPopup()
+                logger.debug(f"Updated dropdown with {len(filtered_items)} filtered items")
+            finally:
+                self.blockSignals(False)
+
+            # Show the dropdown if there are matches
+            if filtered_items:
+                logger.debug("Showing popup")
+                self.showPopup()
+        except Exception as e:
+            logger.error(f"Error in _on_text_changed: {e}", exc_info=True)
+            raise
 
 
 class ActionAssignmentWidget(QWidget):
@@ -196,30 +235,42 @@ class RemapDialog(QDialog):
     bindings_changed = pyqtSignal(list)  # List of modified bindings
 
     def __init__(self, input_code: str, profile: ControlProfile, parent=None):
-        super().__init__(parent)
-        self.input_code = input_code
-        self.profile = profile
-        self.bindings_for_input = self.find_bindings_by_input_code(input_code)
-        self.deleted_bindings = []  # Track bindings to be deleted
+        logger.info(f"RemapDialog.__init__ called with input_code={input_code}")
+        try:
+            super().__init__(parent)
+            self.input_code = input_code
+            self.profile = profile
+            logger.debug(f"Finding bindings for input_code: {input_code}")
+            self.bindings_for_input = self.find_bindings_by_input_code(input_code)
+            self.deleted_bindings = []  # Track bindings to be deleted
 
-        # Store all actions grouped by action map
-        self.actions_by_map = {}
-        self.action_map_friendly_names = {}
-        self._build_action_maps()
+            # Store all actions grouped by action map
+            self.actions_by_map = {}
+            self.action_map_friendly_names = {}
+            logger.debug("Building action maps")
+            self._build_action_maps()
+            logger.debug(f"Built {len(self.actions_by_map)} action maps")
 
-        # Input detection setup
-        self.input_detector = InputDetector()
-        self.detecting_input = False
+            # Input detection setup
+            logger.debug("Setting up input detector")
+            self.input_detector = InputDetector()
+            self.detecting_input = False
 
-        # Store action assignment widgets for easy access
-        self.action_widgets = []
+            # Store action assignment widgets for easy access
+            self.action_widgets = []
 
-        self.setWindowTitle("Edit Button Assignment")
-        self.setMinimumWidth(700)
-        self.setMinimumHeight(500)
+            self.setWindowTitle("Edit Button Assignment")
+            self.setMinimumWidth(700)
+            self.setMinimumHeight(500)
 
-        self.setup_ui()
-        self.populate_from_bindings()
+            logger.debug("Setting up UI")
+            self.setup_ui()
+            logger.debug("Populating from bindings")
+            self.populate_from_bindings()
+            logger.info("RemapDialog initialization complete")
+        except Exception as e:
+            logger.error(f"Error in RemapDialog.__init__: {e}", exc_info=True)
+            raise
 
     def _build_action_maps(self):
         """Build action map structure for dropdowns"""
