@@ -10,8 +10,6 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBut
                               QFormLayout, QDialogButtonBox, QScrollArea, QWidget)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtCore import QSortFilterProxyModel, QTimer
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -30,30 +28,16 @@ class SearchableComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Set up the model and proxy model for filtering
-        self.source_model = QStandardItemModel()
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.source_model)
-        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.proxy_model.setFilterKeyColumn(-1)  # Search all columns
-
-        # Enable editable mode and set the model
-        self.setModel(self.proxy_model)
+        # Just make it editable - Qt handles filtering automatically with editable comboboxes
         self.setEditable(True)
 
-        # Store data for items (text -> data mapping)
-        self.item_data = {}
-
-        # Connect text changed to filter
-        self.lineEdit().textChanged.connect(self._on_filter_text_changed)
+        # Store items and their data for retrieval
+        self.items_data = {}  # Map from text to userData
 
     def addItem(self, text, userData=None):
         """Add item with optional user data"""
-        item = QStandardItem(text)
-        self.source_model.appendRow(item)
-
-        # Store the data
-        self.item_data[text] = userData
+        super().addItem(text, userData)
+        self.items_data[text] = userData
 
     def addItems(self, items):
         """Add multiple items (list of strings)"""
@@ -63,21 +47,18 @@ class SearchableComboBox(QComboBox):
     def currentData(self, role=Qt.ItemDataRole.UserRole):
         """Get data for current item"""
         current_text = self.currentText()
-        return self.item_data.get(current_text, None)
+
+        # First try exact match from our mapping
+        if current_text in self.items_data:
+            return self.items_data[current_text]
+
+        # Fall back to standard implementation
+        return super().currentData(role)
 
     def clear(self):
         """Clear all items"""
-        self.source_model.clear()
-        self.item_data.clear()
-
-    def _on_filter_text_changed(self, text):
-        """Filter items based on text"""
-        self.proxy_model.setFilterWildcard(text)
-
-    def setCurrentIndex(self, index):
-        """Set current index"""
-        if index >= 0 and index < self.count():
-            super().setCurrentIndex(index)
+        super().clear()
+        self.items_data.clear()
 
 
 class ActionAssignmentWidget(QWidget):
